@@ -1,0 +1,56 @@
+{
+  "name": "auth-service",
+  "version": "1.0.0",
+  "description": "auth service for atf-avatar",
+  "homepage": "https://github.com/atf-inc/atf-avatar#readme",
+  "bugs": {
+    "url": "https://github.com/atf-inc/atf-avatar/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/atf-inc/atf-avatar.git"
+  },
+  "license": "ISC",
+  "author": "atf-team",
+  "type": "commonjs",
+  "main": "server.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "scripts": {
+    "dev": "nodemon",
+    "start": "node server.js",
+    "generate": "dotenv -e ../../.env -- prisma generate --schema=./shared/prisma/schema.prisma",
+    "db:push": "dotenv -e ../../.env -- prisma db push --schema=./shared/prisma/schema.prisma",
+    "db:migrate": "dotenv -e ../../.env -- prisma migrate dev --schema=./shared/prisma/schema.prisma",
+    "db:studio": "dotenv -e ../../.env -- prisma studio --schema=./shared/prisma/schema.prisma",
+    "db:reset": "dotenv -e ../../.env -- prisma migrate reset --schema=./shared/prisma/schema.prisma --force",
+    "db:seed": "node lib/seed.js"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.9.0",
+    "bcryptjs": "^3.0.2",
+    "colors": "^1.4.0",
+    "compression": "^1.8.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "crypto": "^1.0.1",
+    "dotenv": "^16.5.0",
+    "ejs": "^3.1.10",
+    "express": "^5.1.0",
+    "express-rate-limit": "^7.5.0",
+    "helmet": "^8.1.0",
+    "joi": "^17.12.0",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.0",
+    "nodemailer": "^7.0.3",
+    "prisma": "^6.9.0",
+    "winston": "^3.17.0",
+    "zod": "^3.25.62"
+  },
+  "devDependencies": {
+    "@faker-js/faker": "^8.4.1",
+    "dotenv-cli": "^11.0.0",
+    "nodemon": "^3.1.10"
+  }
+}

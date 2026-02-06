@@ -1,0 +1,153 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: frontend:dev
+    container_name: student-portal-frontend
+    working_dir: /app
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - VITE_API_BASE_URL=${VITE_API_BASE_URL:-http://localhost:3006}
+      - VITE_APP_URL=${VITE_APP_URL:-http://localhost:3007}
+      # Hot reload configuration
+      - CHOKIDAR_USEPOLLING=true
+      - CHOKIDAR_INTERVAL=1000
+    volumes:
+      - ./frontend:/app:cached
+      - frontend_node_modules:/app/node_modules
+      # Exclude patterns for better file watching
+      - /app/node_modules
+      - /app/dist
+      - /app/.git
+      - /app/coverage
+    ports:
+      - "${FRONTEND_PORT:-3007}:3007"
+    depends_on:
+      - auth-service
+    restart: unless-stopped
+    networks:
+      - reminder-app-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3007"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    init: true
+    stdin_open: true
+    tty: true
+
+  auth-service:
+    build:
+      context: ./backend/auth-service
+      dockerfile: Dockerfile
+    image: auth-service:dev
+    container_name: auth-service
+    working_dir: /app
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - AUTH_SERVICE_PORT=${AUTH_SERVICE_PORT:-3006}
+      - SERVICE_NAME=auth-service
+      - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@reminder-app-db:5432/${DB_NAME}
+      - JWT_ACCESS_SECRET=${JWT_ACCESS_SECRET}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
+      - JWT_ACCESS_EXPIRY=${JWT_ACCESS_EXPIRY:-15m}
+      - JWT_REFRESH_EXPIRY=${JWT_REFRESH_EXPIRY:-7d}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3007}
+      - COOKIE_DOMAIN=${COOKIE_DOMAIN:-localhost}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - GMAIL_ADDRESS=${GMAIL_ADDRESS}
+      - GMAIL_PASSWORD=${GMAIL_PASSWORD}
+      # Admin auto-creation
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@example.com}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-SecurePassword123!}
+      - ADMIN_NAME=${ADMIN_NAME:-System Admin}
+      # Hot reload configuration
+      - CHOKIDAR_USEPOLLING=true
+      - CHOKIDAR_INTERVAL=1000
+      - NODEMON_LEGACY_WATCH=false
+      - NODE_OPTIONS=--max-old-space-size=2048
+    volumes:
+      - ./backend/auth-service:/app:cached
+      - ./backend/logs/auth-service:/app/logs
+      - auth_service_node_modules:/app/node_modules
+      # Exclude patterns for better file watching
+      - /app/logs
+      - /app/.git
+      - /app/coverage
+      - /app/dist
+      - /app/build
+    ports:
+      - "${AUTH_SERVICE_PORT:-3006}:${AUTH_SERVICE_PORT:-3006}"
+    command: >
+      sh -c "
+        echo '🚀 [auth-service] Starting setup...' &&
+
+        # Install service dependencies
+        echo '📦 Installing auth-service dependencies...' &&
+        npm ci --include=dev &&
+
+        # Generate Prisma client (direct command, env vars from docker-compose)
+        echo '🔧 Generating Prisma client...' &&
+        npx prisma generate --schema=./shared/prisma/schema.prisma &&
+
+        # Run database migrations
+        echo '🗄️ Running database migrations...' &&
+        npx prisma db push --schema=./shared/prisma/schema.prisma &&
+
+        echo '✅ Setup complete, starting server...' &&
+        npm run dev
+      "
+    depends_on:
+      reminder-app-db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - reminder-app-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3006/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+    init: true
+    stdin_open: true
+    tty: true
+  reminder-app-db:
+    image: postgres:15-alpine
+    container_name: reminder-app-db
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "${DB_PORT:-5434}:5432"
+    command: >
+      postgres
+      -c max_connections=200
+      -c shared_buffers=256MB
+      -c effective_cache_size=1GB
+      -c work_mem=4MB
+      -c maintenance_work_mem=64MB
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - reminder-app-network
+volumes:
+  db_data:
+    driver: local
+  auth_service_node_modules:
+    driver: local
+  frontend_node_modules:
+    driver: local
+networks:
+  reminder-app-network:
+    driver: bridge

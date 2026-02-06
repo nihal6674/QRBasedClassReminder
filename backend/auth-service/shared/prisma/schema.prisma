@@ -1,0 +1,230 @@
+// backend/auth-service/shared/prisma/schema.prisma
+generator client {
+  provider      = "prisma-client-js"
+  output        = "../lib/generated/client"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// ENUMS
+// ============================================
+
+enum AdminRole {
+  SUPER_ADMIN
+  ADMIN
+  VIEWER
+}
+
+enum ClassType {
+  TYPE_1
+  TYPE_2
+  TYPE_3
+  TYPE_4
+  TYPE_5
+  TYPE_6
+}
+
+enum SignupStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+enum MessageChannel {
+  EMAIL
+  SMS
+}
+
+enum DeliveryStatus {
+  SENT
+  FAILED
+  DELIVERED
+  BOUNCED
+}
+
+// ============================================
+// Admin Model - System administrators
+// ============================================
+
+model Admin {
+  id          String    @id @default(uuid()) @db.Uuid
+  email       String    @unique
+  password    String
+  name        String
+  role        AdminRole @default(VIEWER)
+  isActive    Boolean   @default(true)
+  lastLoginAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  sessions       AdminSession[]
+  passwordResets PasswordReset[]
+
+  // Indexes for performance
+  @@index([email])
+  @@index([role])
+  @@index([isActive])
+  @@map("admins")
+}
+
+// ============================================
+// AdminSession Model - Admin authentication sessions
+// ============================================
+
+model AdminSession {
+  id           String   @id @default(uuid()) @db.Uuid
+  adminId      String   @db.Uuid
+  token        String   @unique
+  refreshToken String?  @unique
+  expiresAt    DateTime
+  ipAddress    String?
+  userAgent    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  // Indexes for performance
+  @@index([adminId])
+  @@index([token])
+  @@index([refreshToken])
+  @@index([expiresAt])
+  @@index([adminId, expiresAt])
+  @@map("admin_sessions")
+}
+
+// ============================================
+// PasswordReset Model - Admin password reset tokens
+// ============================================
+
+model PasswordReset {
+  id        String    @id @default(uuid()) @db.Uuid
+  adminId   String    @db.Uuid
+  email     String
+  token     String    @unique
+  expiresAt DateTime
+  isUsed    Boolean   @default(false)
+  usedAt    DateTime?
+  attempts  Int       @default(0)
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  // Relations
+  admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  // Indexes for performance
+  @@index([adminId])
+  @@index([email])
+  @@index([token])
+  @@index([expiresAt])
+  @@index([isUsed])
+  @@map("password_resets")
+}
+
+// ============================================
+// Student Model - Student information
+// ============================================
+
+model Student {
+  id            String   @id @default(uuid()) @db.Uuid
+  email         String?  @unique
+  phone         String?  @unique
+  optedOutEmail Boolean  @default(false)
+  optedOutSms   Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  signups Signup[]
+
+  // Indexes for performance
+  @@index([email])
+  @@index([phone])
+  @@index([optedOutEmail])
+  @@index([optedOutSms])
+  @@map("students")
+}
+
+// ============================================
+// Signup Model - Student class registrations
+// ============================================
+
+model Signup {
+  id                    String       @id @default(uuid()) @db.Uuid
+  studentId             String       @db.Uuid
+  classType             ClassType
+  reminderScheduledDate DateTime
+  reminderSentAt        DateTime?
+  status                SignupStatus @default(PENDING)
+  notes                 String?      @db.Text
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+
+  // Relations
+  student      Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  deliveryLogs DeliveryLog[]
+
+  // Indexes for performance
+  @@index([studentId])
+  @@index([classType])
+  @@index([reminderScheduledDate])
+  @@index([status])
+  @@index([reminderScheduledDate, status])
+  @@map("signups")
+}
+
+// ============================================
+// MessageTemplate Model - Email/SMS templates
+// ============================================
+
+model MessageTemplate {
+  id           String         @id @default(uuid()) @db.Uuid
+  classType    ClassType
+  channel      MessageChannel
+  subject      String?
+  body         String         @db.Text
+  scheduleLink String
+  variables    Json?
+  updatedAt    DateTime       @updatedAt
+
+  // Unique constraint: one template per class type per channel
+  @@unique([classType, channel])
+  @@index([classType])
+  @@index([channel])
+  @@map("message_templates")
+}
+
+// ============================================
+// DeliveryLog Model - Delivery tracking
+// ============================================
+
+model DeliveryLog {
+  id                String         @id @default(uuid()) @db.Uuid
+  signupId          String         @db.Uuid
+  channel           MessageChannel
+  status            DeliveryStatus
+  providerMessageId String?
+  errorMessage      String?        @db.Text
+  metadata          Json?
+  createdAt         DateTime       @default(now())
+
+  // Relations
+  signup Signup @relation(fields: [signupId], references: [id], onDelete: Cascade)
+
+  // Indexes for performance
+  @@index([signupId])
+  @@index([channel])
+  @@index([status])
+  @@index([providerMessageId])
+  @@index([createdAt])
+  @@map("delivery_logs")
+}
