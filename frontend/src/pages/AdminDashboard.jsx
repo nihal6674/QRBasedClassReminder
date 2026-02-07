@@ -221,6 +221,7 @@ const AdminDashboard = () => {
                   onSort={toggleSortDirection}
                   onSelectSignup={toggleSignupSelection}
                   selectedSignupIds={selectedSignupIds}
+                  onSelectAll={(checked) => checked ? selectAllSignups() : clearSelection()}
                   onSendReminder={handleSendReminder}
                   onViewDetails={handleViewDetails}
                   sendingReminders={sendingReminders}

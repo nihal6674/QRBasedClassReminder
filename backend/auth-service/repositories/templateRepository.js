@@ -23,7 +23,6 @@ const TEMPLATE_FIELDS = {
         body: true,
         scheduleLink: true,
         variables: true,
-        createdAt: true,
         updatedAt: true,
     },
 };

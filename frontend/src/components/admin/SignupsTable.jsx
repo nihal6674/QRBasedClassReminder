@@ -19,6 +19,7 @@ const SignupsTable = ({
   onSort,
   onSelectSignup,
   selectedSignupIds,
+  onSelectAll,
   onSendReminder,
   onViewDetails,
   sendingReminders = [],
@@ -59,8 +60,9 @@ const SignupsTable = ({
               <input
                 type="checkbox"
                 className="h-4 w-4 rounded border-gray-300"
+                checked={signups.length > 0 && signups.every((s) => selectedSignupIds?.includes(s.id))}
                 onChange={(e) => {
-                  // TODO: Implement select all
+                  onSelectAll?.(e.target.checked);
                 }}
               />
             </TableHead>
