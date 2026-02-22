@@ -3,3 +3,6 @@
 **/dist
 **/generated
 **/.vscode
+.vercel
+.env*.local
+**/**/logs/

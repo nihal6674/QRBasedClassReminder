@@ -7,7 +7,7 @@ const studentController = require("../controllers/studentController");
 // Public Student Routes (No Authentication)
 // ============================================
 
-// Create new signup
+// Direct signup (used by class registration page and admin add-student)
 router.post("/signup", studentController.createSignup);
 
 // Get signup confirmation

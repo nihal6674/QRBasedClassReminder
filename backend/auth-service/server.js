@@ -28,6 +28,13 @@ const {
 const adminRoutes = require("./routes/adminRoutes");
 const studentRoutes = require("./routes/studentRoutes");
 const signupRoutes = require("./routes/signupRoutes");
+const reminderRoutes = require("./routes/reminderRoutes");
+const templateRoutes = require("./routes/templateRoutes");
+const unsubscribeRoutes = require("./routes/unsubscribeRoutes");
+const registrationOtpRoutes = require("./routes/registrationOtpRoutes");
+
+// Cron jobs
+const { startReminderCron } = require("./jobs/reminderCron");
 
 // Admin repository and utils for auto-creation
 const adminRepository = require("./repositories/adminRepository");
@@ -39,6 +46,12 @@ require("dotenv").config({
 });
 
 const app = express();
+
+// Trust proxy - required for secure cookies behind reverse proxies (Render, Heroku, etc.)
+// This allows Express to trust X-Forwarded-* headers
+if (process.env.NODE_ENV === "production") {
+  app.set("trust proxy", 1);
+}
 
 // =============================================
 // Logging Middleware (Must be first!)
@@ -62,9 +75,34 @@ app.use(
 );
 
 // CORS configuration
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:3000",
+  process.env.FRONTEND_URL,
+].filter(Boolean);
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, Postman, etc.)
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      // Check if origin is in the allowed list
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      // Allow any Vercel preview deployment for this app
+      if (origin.includes("qrbasedclassreminder") && origin.endsWith(".vercel.app")) {
+        return callback(null, true);
+      }
+
+      // Reject other origins
+      console.log("CORS blocked origin:", origin);
+      callback(new Error("Not allowed by CORS"));
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
@@ -82,6 +120,8 @@ app.use(compression());
 const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100,
+  // Skip rate limiting for health checks (Render pings every 5 seconds)
+  skip: (req) => req.path === "/health" || req.path === "/",
   message: {
     success: false,
     error: {
@@ -265,7 +305,11 @@ app.get("/health", async (req, res) => {
 // Admin API Routes
 app.use("/api/admin", adminRoutes);
 app.use("/api/students", studentRoutes); // Public student routes
+app.use("/api/students/signup", registrationOtpRoutes); // Public registration with OTP verification
+app.use("/api/students/unsubscribe", unsubscribeRoutes); // Public unsubscribe routes with OTP verification
 app.use("/api/admin/signups", signupRoutes); // Admin signup management routes (auth temporarily disabled)
+app.use("/api/admin/reminders", reminderRoutes); // Admin reminder management routes
+app.use("/api/admin/templates", templateRoutes); // Template management routes
 
 // Error logging middleware
 app.use(errorLoggingMiddleware(logger));
@@ -326,7 +370,7 @@ const initializeDefaultAdmin = async () => {
 // =============================================
 
 const startServer = async () => {
-  const port = process.env.AUTH_SERVICE_PORT || 3001;
+  const port = process.env.PORT || process.env.AUTH_SERVICE_PORT || 3001;
 
   try {
     // Initialize database connection
@@ -336,6 +380,9 @@ const startServer = async () => {
 
     // Create default admin from environment variables
     await initializeDefaultAdmin();
+
+    // Start reminder cron job
+    startReminderCron();
 
     // Start server
     const server = app.listen(port, () => {

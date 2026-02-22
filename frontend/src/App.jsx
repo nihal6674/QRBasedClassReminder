@@ -1,13 +1,27 @@
+import { useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import StudentSignup from '@pages/StudentSignup';
 import AdminDashboard from '@pages/AdminDashboard';
+import AdminLogin from '@pages/AdminLogin';
 import TemplateManager from '@pages/TemplateManager';
 import OptOutConfirmation from '@pages/OptOutConfirmation';
+import UnsubscribeFlow from '@pages/UnsubscribeFlow';
+import MyRegistrations from '@pages/MyRegistrations';
+import ClassRegistration from '@pages/ClassRegistration';
 import QRGenerator from '@pages/QRGenerator';
 import NotFound from '@pages/NotFound';
+import ProtectedRoute from '@components/auth/ProtectedRoute';
+import useAuthStore from '@store/authStore';
 
 function App() {
+  const checkAuth = useAuthStore((state) => state.checkAuth);
+
+  // Check authentication status on app load
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
   return (
     <>
       <Toaster
@@ -36,18 +50,42 @@ function App() {
         }}
       />
       <Routes>
-        {/* Student Routes */}
+        {/* Public Routes */}
         <Route path="/signup" element={<StudentSignup />} />
         <Route path="/signup/:classType" element={<StudentSignup />} />
         <Route path="/opt-out/:studentId" element={<OptOutConfirmation />} />
+        <Route path="/unsubscribe" element={<UnsubscribeFlow />} />
+        <Route path="/my-registrations" element={<MyRegistrations />} />
+        <Route path="/login" element={<AdminLogin />} />
 
-        {/* Admin Routes */}
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/admin/templates" element={<TemplateManager />} />
-        <Route path="/admin/qr-generator" element={<QRGenerator />} />
+        {/* Protected Admin Routes */}
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/templates"
+          element={
+            <ProtectedRoute>
+              <TemplateManager />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/qr-generator"
+          element={
+            <ProtectedRoute>
+              <QRGenerator />
+            </ProtectedRoute>
+          }
+        />
 
-        {/* Default */}
-        <Route path="/" element={<QRGenerator />} />
+        {/* Default - Student Registration */}
+        <Route path="/" element={<ClassRegistration />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </>
@@ -55,3 +93,4 @@ function App() {
 }
 
 export default App;
+

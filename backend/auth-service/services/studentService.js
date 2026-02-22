@@ -14,25 +14,25 @@ const { createLogger } = require("../shared/utils/logger");
 
 const logger = createLogger("student-service");
 
-// Class type to reminder interval mapping (in days before class)
+// Class type to reminder interval mapping (in months after signup)
 const CLASS_REMINDER_INTERVALS = {
-    TYPE_1: 7, // 7 days before
-    TYPE_2: 7,
-    TYPE_3: 7,
-    TYPE_4: 7,
-    TYPE_5: 7,
-    TYPE_6: 7,
+    TYPE_1: 4,   // Initial Firearms - 4 months
+    TYPE_2: 5,   // Firearms Requalification - 5 months
+    TYPE_3: 11,  // CPR/AED & First Aid - 11 months
+    TYPE_4: 11,  // Handcuffing / Pepper Spray - 11 months
+    TYPE_5: 11,  // CEW / Taser - 11 months
+    TYPE_6: 11,  // Baton - 11 months
 };
 
 /**
  * Calculate reminder scheduled date based on class type
  * @param {string} classType - Class type
- * @returns {Date} Scheduled reminder date
+ * @returns {Date} Scheduled reminder date (months after signup)
  */
 const calculateReminderDate = (classType) => {
-    const daysBeforeClass = CLASS_REMINDER_INTERVALS[classType] || 7;
+    const monthsAfterSignup = CLASS_REMINDER_INTERVALS[classType] || 11;
     const scheduledDate = new Date();
-    scheduledDate.setDate(scheduledDate.getDate() + daysBeforeClass);
+    scheduledDate.setMonth(scheduledDate.getMonth() + monthsAfterSignup);
     return scheduledDate;
 };
 
@@ -45,7 +45,7 @@ const createSignup = async (signupData) => {
     try {
         // Validate input
         const validatedData = createSignupSchema.parse(signupData);
-        const { email, phone, classType } = validatedData;
+        const { email, phone, classType, name } = validatedData;
 
         // Check if student already exists
         let student = await studentRepository.checkExists(email, phone);
@@ -55,11 +55,21 @@ const createSignup = async (signupData) => {
             student = await studentRepository.createStudent({
                 email,
                 phone,
+                ...(name && { name }),
                 optedOutEmail: false,
                 optedOutSms: false,
             });
             logger.info("New student created during signup", { studentId: student.id });
         } else {
+            // Check for duplicate signup (same student, same class type)
+            const existingSignups = await signupRepository.findByStudentId(student.id);
+            const duplicateSignup = existingSignups.find(s => s.classType === classType);
+            if (duplicateSignup) {
+                throw ConflictError(
+                    "This student is already registered for this training class.",
+                    "DUPLICATE_SIGNUP"
+                );
+            }
             logger.info("Existing student found during signup", { studentId: student.id });
         }
 

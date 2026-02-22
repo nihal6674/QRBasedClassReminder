@@ -41,20 +41,31 @@ const extractRefreshToken = (req) => {
  * Get cookie options for setting authentication cookies
  */
 const getCookieOptions = (isRefreshToken = false) => {
+  const isProduction = process.env.NODE_ENV === "production";
+  const cookieDomain = process.env.COOKIE_DOMAIN;
+
   const baseOptions = {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
-    domain: process.env.COOKIE_DOMAIN || undefined,
+    secure: isProduction,
+    // Use 'none' for cross-origin requests in production (frontend and backend on different domains)
+    // Use 'lax' for same-origin (when using Vercel rewrites or local dev)
+    sameSite: isProduction ? "none" : "lax",
+    path: "/",
   };
+
+  // Only set domain if explicitly provided and valid
+  // Don't set domain for localhost or when frontend/backend are on different subdomains
+  if (cookieDomain && cookieDomain !== "localhost" && cookieDomain !== "") {
+    baseOptions.domain = cookieDomain;
+  }
 
   if (isRefreshToken) {
     baseOptions.maxAge = 7 * 24 * 60 * 60 * 1000; // 7 days
-    baseOptions.path = "/api/admin/";
   } else {
     baseOptions.maxAge = 15 * 60 * 1000; // 15 minutes
   }
 
+  logger.debug("Cookie options", { isRefreshToken, isProduction, cookieDomain, options: baseOptions });
   return baseOptions;
 };
 

@@ -47,6 +47,12 @@ enum DeliveryStatus {
   BOUNCED
 }
 
+enum ReminderPreference {
+  EMAIL
+  SMS
+  BOTH
+}
+
 // ============================================
 // Admin Model - System administrators
 // ============================================
@@ -135,13 +141,16 @@ model PasswordReset {
 // ============================================
 
 model Student {
-  id            String   @id @default(uuid()) @db.Uuid
-  email         String?  @unique
-  phone         String?  @unique
-  optedOutEmail Boolean  @default(false)
-  optedOutSms   Boolean  @default(false)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                 String             @id @default(uuid()) @db.Uuid
+  email              String?            @unique
+  phone              String?            @unique
+  name               String?
+  reminderPreference ReminderPreference @default(BOTH)
+  optedOutEmail      Boolean            @default(false)
+  optedOutSms        Boolean            @default(false)
+  optOutOtp          String?            // OTP for unsubscribe verification (null when not active)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
 
   // Relations
   signups Signup[]
@@ -165,6 +174,8 @@ model Signup {
   reminderScheduledDate DateTime
   reminderSentAt        DateTime?
   status                SignupStatus @default(PENDING)
+  optedOutEmail         Boolean      @default(false)
+  optedOutSms           Boolean      @default(false)
   notes                 String?      @db.Text
   createdAt             DateTime     @default(now())
   updatedAt             DateTime     @updatedAt
@@ -192,7 +203,7 @@ model MessageTemplate {
   channel      MessageChannel
   subject      String?
   body         String         @db.Text
-  scheduleLink String
+  scheduleLink String?
   variables    Json?
   updatedAt    DateTime       @updatedAt
 

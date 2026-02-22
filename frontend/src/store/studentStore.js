@@ -1,12 +1,18 @@
 import { create } from 'zustand';
-import { createSignup } from '@services/studentService';
-import { isValidEmail, isValidPhone, calculateReminderDate } from '@utils/formatters';
+import { isValidEmail, isValidPhone } from '@utils/formatters';
 import { ERROR_MESSAGES } from '@utils/constants';
+import {
+  initiateSignup,
+  verifyOtp,
+  completeSignup,
+  resendOtp,
+} from '@services/registrationOtpService';
 
 const useStudentStore = create((set, get) => ({
   // State
   selectedClassType: null,
   formData: {
+    name: '',
     email: '',
     phone: '',
   },
@@ -16,6 +22,18 @@ const useStudentStore = create((set, get) => ({
   submitError: null,
   signupResult: null,
   showConfirmation: false,
+
+  // OTP Flow State
+  otpStep: 'idle', // 'idle' | 'selecting' | 'sent' | 'verifying' | 'verified'
+  registrationToken: null,
+  verificationToken: null,
+  verificationChannel: null,
+  maskedDestination: null,
+  otpExpiresAt: null,
+  otpError: null,
+  isVerifyingOtp: false,
+  isResendingOtp: false,
+  verifiedChannels: [], // tracks which channels have been verified
 
   // Actions
   setSelectedClassType: (classType) => {
@@ -46,6 +64,11 @@ const useStudentStore = create((set, get) => ({
     // Validate class type
     if (!selectedClassType) {
       errors.classType = 'Please select a training type';
+    }
+
+    // Validate name
+    if (!formData.name || formData.name.trim() === '') {
+      errors.name = 'Name is required';
     }
 
     // Validate contact info - require at least one
@@ -84,51 +107,72 @@ const useStudentStore = create((set, get) => ({
     set({ showConfirmation: false });
   },
 
-  submitSignup: async () => {
-    const { formData, selectedClassType, validateForm } = get();
+  // OTP Flow Actions
+  selectVerificationChannel: (channel) => {
+    set({ verificationChannel: channel });
+  },
 
-    // Validate before submitting
-    if (!validateForm()) {
-      return false;
+  /**
+   * Start OTP flow - when both email and phone provided, verify both sequentially
+   */
+  startOtpFlow: () => {
+    const { formData } = get();
+    const hasEmail = formData.email && formData.email.trim() !== '';
+    const hasPhone = formData.phone && formData.phone.trim() !== '';
+
+    if (hasEmail && hasPhone) {
+      // Both provided - start with email verification (phone will follow automatically)
+      set({ verificationChannel: 'email', verifiedChannels: [] });
+      get().initiateOtpSignup('email');
+    } else {
+      // Only one provided - auto-select and initiate
+      const channel = hasEmail ? 'email' : 'phone';
+      set({ verificationChannel: channel, verifiedChannels: [] });
+      get().initiateOtpSignup(channel);
     }
+  },
 
-    set({ isSubmitting: true, submitError: null });
+  /**
+   * Initiate OTP signup - send verification code
+   */
+  initiateOtpSignup: async (channel) => {
+    const { formData, selectedClassType, verificationChannel } = get();
+    const selectedChannel = channel || verificationChannel;
+
+    set({ isSubmitting: true, otpError: null, submitError: null });
 
     try {
-      // Calculate reminder scheduled date (7 days from now)
-      const reminderScheduledDate = calculateReminderDate(selectedClassType, 7);
-
-      const signupData = {
-        classType: selectedClassType,
+      const result = await initiateSignup({
+        name: formData.name || null,
         email: formData.email || null,
         phone: formData.phone || null,
-      };
-
-      const result = await createSignup(signupData);
+        classType: selectedClassType,
+        verificationChannel: selectedChannel,
+      });
 
       set({
         isSubmitting: false,
-        submitSuccess: true,
-        signupResult: result.data,
-        submitError: null,
+        otpStep: 'sent',
+        registrationToken: result.data.registrationToken,
+        otpExpiresAt: result.data.expiresAt,
+        maskedDestination: result.data.maskedDestination,
+        verificationChannel: result.data.verificationChannel,
       });
 
       return true;
     } catch (error) {
-      console.error('Signup submission error:', error);
+      console.error('Initiate signup error:', error);
 
-      // Handle UNIQUE constraint violations (Prisma error code P2002)
-      let errorMessage = error.message || ERROR_MESSAGES.SUBMISSION_ERROR;
+      let errorMessage = error.message || 'Failed to send verification code. Please try again.';
 
-      if (error.code === 'P2002' || error.message?.includes('Unique constraint')) {
-        errorMessage = 'This email or phone number is already registered. Please use a different contact method.';
-      } else if (error.status === 409 || error.message?.includes('already exists')) {
-        errorMessage = 'This email or phone number is already registered. Please use a different contact method.';
+      // Handle specific errors
+      if (error.code === 'EMAIL_EXISTS' || error.code === 'PHONE_EXISTS' || error.status === 409) {
+        errorMessage = 'This email or phone number is already registered.';
       }
 
       set({
         isSubmitting: false,
-        submitSuccess: false,
+        otpError: errorMessage,
         submitError: errorMessage,
       });
 
@@ -136,10 +180,143 @@ const useStudentStore = create((set, get) => ({
     }
   },
 
+  /**
+   * Verify OTP code - handles multi-channel verification
+   */
+  verifyOtpCode: async (otp) => {
+    const { registrationToken } = get();
+
+    set({ isVerifyingOtp: true, otpError: null });
+
+    try {
+      const result = await verifyOtp(registrationToken, otp);
+
+      if (result.data.verified) {
+        // All channels verified - complete registration
+        set({
+          isVerifyingOtp: false,
+          otpStep: 'verified',
+          verificationToken: result.data.verificationToken,
+        });
+
+        // Auto-complete registration
+        return await get().completeOtpSignup();
+      } else {
+        // More verification needed (second channel)
+        set({
+          isVerifyingOtp: false,
+          otpStep: 'sent', // Stay on OTP input for next channel
+          verificationChannel: result.data.nextChannel,
+          maskedDestination: result.data.maskedDestination,
+          otpExpiresAt: result.data.expiresAt,
+          verifiedChannels: [...(get().verifiedChannels || []), result.data.channelVerified],
+          otpError: null,
+        });
+
+        return 'next_channel';
+      }
+    } catch (error) {
+      console.error('Verify OTP error:', error);
+
+      set({
+        isVerifyingOtp: false,
+        otpError: error.message || 'Invalid verification code. Please try again.',
+      });
+
+      return false;
+    }
+  },
+
+  /**
+   * Complete registration after OTP verification
+   */
+  completeOtpSignup: async () => {
+    const { verificationToken } = get();
+
+    set({ isSubmitting: true, otpError: null });
+
+    try {
+      const result = await completeSignup(verificationToken);
+
+      set({
+        isSubmitting: false,
+        submitSuccess: true,
+        signupResult: result.data,
+        otpStep: 'idle',
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Complete signup error:', error);
+
+      set({
+        isSubmitting: false,
+        otpError: error.message || 'Failed to complete registration. Please try again.',
+        submitError: error.message || 'Failed to complete registration. Please try again.',
+      });
+
+      return false;
+    }
+  },
+
+  /**
+   * Resend OTP code
+   */
+  resendOtpCode: async () => {
+    const { registrationToken } = get();
+
+    set({ isResendingOtp: true, otpError: null });
+
+    try {
+      const result = await resendOtp(registrationToken);
+
+      set({
+        isResendingOtp: false,
+        otpExpiresAt: result.data.expiresAt,
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Resend OTP error:', error);
+
+      set({
+        isResendingOtp: false,
+        otpError: error.message || 'Failed to resend code. Please try again.',
+      });
+
+      return false;
+    }
+  },
+
+  /**
+   * Go back from OTP step
+   */
+  backFromOtp: () => {
+    const { otpStep } = get();
+
+    if (otpStep === 'sent') {
+      set({
+        otpStep: 'idle',
+        registrationToken: null,
+        otpExpiresAt: null,
+        maskedDestination: null,
+        otpError: null,
+        showConfirmation: true, // Go back to confirmation screen
+      });
+    } else if (otpStep === 'selecting') {
+      set({
+        otpStep: 'idle',
+        verificationChannel: null,
+        showConfirmation: true,
+      });
+    }
+  },
+
   resetForm: () => {
     set({
       selectedClassType: null,
       formData: {
+        name: '',
         email: '',
         phone: '',
       },
@@ -149,6 +326,17 @@ const useStudentStore = create((set, get) => ({
       submitError: null,
       signupResult: null,
       showConfirmation: false,
+      // OTP state reset
+      otpStep: 'idle',
+      registrationToken: null,
+      verificationToken: null,
+      verificationChannel: null,
+      maskedDestination: null,
+      otpExpiresAt: null,
+      otpError: null,
+      isVerifyingOtp: false,
+      isResendingOtp: false,
+      verifiedChannels: [],
     });
   },
 
@@ -158,6 +346,21 @@ const useStudentStore = create((set, get) => ({
       submitSuccess: false,
       submitError: null,
       signupResult: null,
+    });
+  },
+
+  resetOtpState: () => {
+    set({
+      otpStep: 'idle',
+      registrationToken: null,
+      verificationToken: null,
+      verificationChannel: null,
+      maskedDestination: null,
+      otpExpiresAt: null,
+      otpError: null,
+      isVerifyingOtp: false,
+      isResendingOtp: false,
+      verifiedChannels: [],
     });
   },
 }));

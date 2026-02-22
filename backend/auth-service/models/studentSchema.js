@@ -45,12 +45,16 @@ const messageChannelSchema = z.enum(["EMAIL", "SMS"], {
 // ============================================
 // Student schemas
 // ============================================
+// Reminder preference enum
+const reminderPreferenceSchema = z.enum(['EMAIL', 'SMS', 'BOTH']);
 
 // Student creation schema (for internal use)
 const createStudentSchema = z
     .object({
         email: emailSchema.nullish(), // Accept null, undefined, or valid string
         phone: phoneSchema.nullish(), // Accept null, undefined, or valid string
+        name: z.string().min(1, "Name is required").max(255),
+        reminderPreference: reminderPreferenceSchema.optional().default('BOTH'),
         optedOutEmail: z.boolean().optional().default(false),
         optedOutSms: z.boolean().optional().default(false),
     })
@@ -64,6 +68,8 @@ const updateStudentSchema = z
     .object({
         email: emailSchema.optional(),
         phone: phoneSchema.optional(),
+        name: z.string().max(255).optional(),
+        reminderPreference: reminderPreferenceSchema.optional(),
         optedOutEmail: z.boolean().optional(),
         optedOutSms: z.boolean().optional(),
     })
@@ -89,6 +95,7 @@ const createSignupSchema = z
     .object({
         email: emailSchema.nullish(), // Accept null, undefined, or valid string
         phone: phoneSchema.nullish(), // Accept null, undefined, or valid string
+        name: z.string().min(1, "Name is required").max(255),
         classType: classTypeSchema,
     })
     .strict()
@@ -101,6 +108,7 @@ const updateSignupSchema = z
     .object({
         classType: classTypeSchema.optional(),
         reminderScheduledDate: z.coerce.date().optional(),
+        reminderSentAt: z.coerce.date().nullable().optional(),
         status: signupStatusSchema.optional(),
         notes: z.string().max(1000, "Notes must be less than 1000 characters").optional(),
     })

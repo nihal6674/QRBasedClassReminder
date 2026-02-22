@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import Input from '@components/shared/Input';
+import PhoneInput from '@components/shared/PhoneInput';
 import Button from '@components/shared/Button';
 import Alert, { AlertDescription } from '@components/shared/Alert';
 import { CLASS_TYPE_LABELS } from '@utils/constants';
@@ -50,6 +51,20 @@ const SignupForm = ({
           Change training type
         </button>
       </div>
+
+      {/* Name Input */}
+      <Input
+        type="text"
+        name="name"
+        label="Your Name"
+        placeholder="John Doe"
+        value={formData.name}
+        onChange={(e) => onFormChange('name', e.target.value)}
+        error={errors.name}
+        required
+        disabled={isSubmitting}
+        autoComplete="name"
+      />
 
       {/* Contact Method Toggle */}
       <div className="space-y-3">
@@ -109,18 +124,13 @@ const SignupForm = ({
 
       {/* Phone Input */}
       {(contactMethod === 'phone' || contactMethod === 'both') && (
-        <Input
-          type="tel"
-          name="phone"
+        <PhoneInput
           label="Phone Number"
-          placeholder="(123) 456-7890"
           value={formData.phone}
           onChange={(e) => onFormChange('phone', e.target.value)}
           error={errors.phone}
           required={contactMethod === 'phone'}
           disabled={isSubmitting}
-          autoComplete="tel"
-          inputMode="tel"
         />
       )}
 

@@ -1,0 +1,81 @@
+// backend/auth-service/controllers/unsubscribeController.js
+const unsubscribeService = require("../services/unsubscribeService");
+const { createSuccessResponse, createErrorResponse } = require("../lib/utils");
+const { createLogger } = require("../shared/utils/logger");
+
+const logger = createLogger("unsubscribe-controller");
+
+/**
+ * Verify OTP for unsubscribe flow
+ * POST /api/students/unsubscribe/verify
+ */
+const verifyOtp = async (req, res) => {
+    try {
+        const { destination, otp } = req.body;
+
+        logger.info("OTP verification attempt", {
+            destination: destination?.substring(0, 3) + "***"
+        });
+
+        const result = await unsubscribeService.verifyOtp({ destination, otp });
+
+        logger.info("OTP verification successful", { studentId: result.student.id });
+        return createSuccessResponse(res, result, result.message, 200);
+    } catch (error) {
+        logger.error("OTP verification failed", { error: error.message });
+        return createErrorResponse(res, error, "verifyOtp");
+    }
+};
+
+/**
+ * Confirm unsubscribe after OTP verification
+ * POST /api/students/unsubscribe/confirm
+ */
+const confirmUnsubscribe = async (req, res) => {
+    try {
+        const { token, optedOutEmail, optedOutSms, signupPreferences } = req.body;
+
+        logger.info("Unsubscribe confirmation attempt");
+
+        const result = await unsubscribeService.confirmUnsubscribe({
+            token,
+            optedOutEmail,
+            optedOutSms,
+            signupPreferences,
+        });
+
+        logger.info("Unsubscribe confirmed successfully");
+        return createSuccessResponse(res, result, result.message, 200);
+    } catch (error) {
+        logger.error("Unsubscribe confirmation failed", { error: error.message });
+        return createErrorResponse(res, error, "confirmUnsubscribe");
+    }
+};
+
+/**
+ * Initiate opt-out flow - send OTP and return registrations
+ * POST /api/students/unsubscribe/initiate
+ */
+const initiateOptOut = async (req, res) => {
+    try {
+        const { destination } = req.body;
+
+        logger.info("Opt-out initiation attempt", {
+            destination: destination?.substring(0, 3) + "***"
+        });
+
+        const result = await unsubscribeService.initiateOptOut({ destination });
+
+        logger.info("Opt-out OTP sent successfully");
+        return createSuccessResponse(res, result, "Verification code sent successfully.", 200);
+    } catch (error) {
+        logger.error("Opt-out initiation failed", { error: error.message });
+        return createErrorResponse(res, error, "initiateOptOut");
+    }
+};
+
+module.exports = {
+    verifyOtp,
+    confirmUnsubscribe,
+    initiateOptOut,
+};
