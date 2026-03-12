@@ -160,7 +160,7 @@ const ReminderDetailModal = ({ isOpen, onClose, signup, onRefresh }) => {
             </div>
             <div>
               <span className="text-muted-foreground">Scheduled Date:</span>
-              <p className="font-medium">{formatDate(signup.reminderScheduledDate, 'MMM dd, yyyy')}</p>
+              <p className="font-medium">{formatDate(signup.reminderScheduledDate, 'MMM dd, yyyy hh:mm a')}</p>
             </div>
             <div>
               <span className="text-muted-foreground">Sent At:</span>

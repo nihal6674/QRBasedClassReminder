@@ -497,6 +497,22 @@ const deactivateAdmin = async (adminId) => {
 };
 
 /**
+ * Activate admin (ADMIN only)
+ * @param {string} adminId - Admin ID
+ * @returns {Promise<Object>} Result
+ */
+const activateAdmin = async (adminId) => {
+  try {
+    const updatedAdmin = await adminRepository.activateAdmin(adminId);
+    logger.info("Admin activated", { adminId });
+    return { admin: updatedAdmin, message: SUCCESS_MESSAGES.ADMIN.ACTIVATED };
+  } catch (error) {
+    logger.error("Activate admin failed", { error: error.message, adminId });
+    throw transformError(error, "activateAdmin");
+  }
+};
+
+/**
  * Get admin statistics
  * @returns {Promise<Object>} Admin stats
  */
@@ -532,5 +548,6 @@ module.exports = {
   updateAdminById,
   changeAdminRole,
   deactivateAdmin,
+  activateAdmin,
   getAdminStats,
 };

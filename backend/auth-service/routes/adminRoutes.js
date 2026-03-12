@@ -73,4 +73,12 @@ router.delete(
   adminController.deactivateAdmin
 );
 
+// Activate admin
+router.put(
+  "/manage/:adminId/activate",
+  authenticateAdmin,
+  requireAdmin,
+  adminController.activateAdmin
+);
+
 module.exports = router;

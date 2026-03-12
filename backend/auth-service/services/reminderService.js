@@ -43,7 +43,7 @@ const interpolateTemplate = (template, variables) => {
  * @returns {Object} { subject?, body }
  */
 const buildDefaultMessage = (classTypeName, channel, scheduleLink) => {
-    const link = scheduleLink || process.env.APP_BASE_URL || "https://yourapp.com";
+    const link = scheduleLink || process.env.BOOKING_LINK || process.env.APP_BASE_URL || "https://yourapp.com";
 
     if (channel === "EMAIL") {
         return {
@@ -62,7 +62,9 @@ const buildDefaultMessage = (classTypeName, channel, scheduleLink) => {
  * @param {string} signupId - The signup ID
  * @returns {Promise<Object>} - { emailResult, smsResult, overallStatus }
  */
-const sendReminder = async (signupId) => {
+const sendReminder = async (signupId, options = {}) => {
+    const { triggeredBy = "manual" } = options;
+
     try {
         // 1. Fetch signup with student data
         const signup = await signupRepository.findById(signupId, true);
@@ -84,6 +86,7 @@ const sendReminder = async (signupId) => {
         // Build unsubscribe link with pre-filled destination
         const unsubscribeLink = `${appUrl}/unsubscribe?${student.email ? 'email=' + encodeURIComponent(student.email) : 'phone=' + encodeURIComponent(student.phone)}`;
 
+        // Use BOOKING_LINK from env for schedule links (falls back to appUrl)
         const bookingLink = process.env.BOOKING_LINK || appUrl;
 
         const baseTemplateVariables = {
@@ -104,12 +107,17 @@ const sendReminder = async (signupId) => {
         const shouldSendEmail = (preference === 'EMAIL' || preference === 'BOTH') && student.email && !student.optedOutEmail;
         const shouldSendSms = (preference === 'SMS' || preference === 'BOTH') && student.phone && !student.optedOutSms;
 
+        const logMetadata = {
+            triggeredBy,
+            scheduledAt: signup.reminderScheduledDate ? signup.reminderScheduledDate.toISOString() : null,
+        };
+
         // 2. Send email if preference allows and student has email
         if (shouldSendEmail) {
             const emailTemplate = await templateRepository.findByClassTypeAndChannel(signup.classType, "EMAIL");
 
-            // Use template's scheduleLink if available, otherwise fall back to BOOKING_LINK or appUrl
-            const emailScheduleLink = emailTemplate?.scheduleLink || bookingLink;
+            // Use BOOKING_LINK from env if set; otherwise fall back to template scheduleLink or appUrl
+            const emailScheduleLink = process.env.BOOKING_LINK || emailTemplate?.scheduleLink || bookingLink;
             const templateVariables = { ...baseTemplateVariables, scheduleLink: emailScheduleLink };
 
             let subject, body, html;
@@ -157,7 +165,7 @@ const sendReminder = async (signupId) => {
                 status: emailResult.success ? "SENT" : "FAILED",
                 providerMessageId: emailResult.messageId || null,
                 errorMessage: emailResult.error || null,
-                metadata: {},
+                metadata: logMetadata,
             });
         }
 
@@ -165,8 +173,8 @@ const sendReminder = async (signupId) => {
         if (shouldSendSms) {
             const smsTemplate = await templateRepository.findByClassTypeAndChannel(signup.classType, "SMS");
 
-            // Use template's scheduleLink if available, otherwise fall back to BOOKING_LINK or appUrl
-            const smsScheduleLink = smsTemplate?.scheduleLink || bookingLink;
+            // Use BOOKING_LINK from env if set; otherwise fall back to template scheduleLink or appUrl
+            const smsScheduleLink = process.env.BOOKING_LINK || smsTemplate?.scheduleLink || bookingLink;
             const templateVariables = { ...baseTemplateVariables, scheduleLink: smsScheduleLink };
 
             let body;
@@ -192,7 +200,7 @@ const sendReminder = async (signupId) => {
                 status: smsResult.success ? "SENT" : "FAILED",
                 providerMessageId: smsResult.messageId || null,
                 errorMessage: smsResult.error || null,
-                metadata: {},
+                metadata: logMetadata,
             });
         }
 
@@ -243,7 +251,7 @@ const processPendingReminders = async () => {
 
         for (const signup of pendingSignups) {
             try {
-                const result = await sendReminder(signup.id);
+                const result = await sendReminder(signup.id, { triggeredBy: "cron" });
                 if (result.overallStatus === "SENT") {
                     sent++;
                 } else {
@@ -280,13 +288,31 @@ const rescheduleReminder = async (signupId, newDate) => {
             throw NotFoundError("Signup not found", "SIGNUP_NOT_FOUND");
         }
 
+        const scheduledDate = new Date(newDate);
+
         const updatedSignup = await signupRepository.updateSignup(signupId, {
-            reminderScheduledDate: new Date(newDate),
+            reminderScheduledDate: scheduledDate,
+            reminderSentAt: null,
             status: "PENDING",
         });
 
-        logger.info("Reminder rescheduled", { signupId, newDate });
-        return { signup: updatedSignup, message: "Reminder rescheduled successfully" };
+        logger.info("Reminder rescheduled", { signupId, newDate: scheduledDate });
+
+        // If the new scheduled date is now or in the past, send immediately (does not rely on cron)
+        let sendResult = null;
+        if (scheduledDate <= new Date()) {
+            logger.info("Rescheduled reminder is due now (or in the past); sending immediately", {
+                signupId,
+                scheduledDate,
+            });
+            sendResult = await sendReminder(signupId, { triggeredBy: "reschedule" });
+        }
+
+        return {
+            signup: updatedSignup,
+            message: "Reminder rescheduled successfully",
+            sendResult,
+        };
     } catch (error) {
         logger.error("Failed to reschedule reminder", { signupId, error: error.message });
         throw transformError(error, "rescheduleReminder");

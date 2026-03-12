@@ -24,6 +24,7 @@ const CLASS_TYPE_LABELS = {
 const CLASS_TYPES = ["TYPE_1", "TYPE_2", "TYPE_3", "TYPE_4", "TYPE_5", "TYPE_6"];
 
 const APP_URL = process.env.APP_BASE_URL || "https://yourapp.com";
+const BOOKING_LINK = process.env.BOOKING_LINK || APP_URL;
 
 const buildEmailTemplate = (classType) => {
     const label = CLASS_TYPE_LABELS[classType];
@@ -43,8 +44,8 @@ If you no longer wish to receive these reminders, you can opt out here:
 
 Thank you,
 Student Training Portal`,
-        scheduleLink: APP_URL,
-        variables: { classTypeName: label, scheduleLink: APP_URL, optOutLink: `${APP_URL}/opt-out` },
+        scheduleLink: BOOKING_LINK,
+        variables: { classTypeName: label, scheduleLink: BOOKING_LINK, optOutLink: `${APP_URL}/opt-out` },
     };
 };
 
@@ -55,8 +56,8 @@ const buildSmsTemplate = (classType) => {
         channel: "SMS",
         subject: null,
         body: `Reminder: Your {{classTypeName}} certification is due for renewal. Schedule now: {{scheduleLink}}`,
-        scheduleLink: APP_URL,
-        variables: { classTypeName: label, scheduleLink: APP_URL },
+        scheduleLink: BOOKING_LINK,
+        variables: { classTypeName: label, scheduleLink: BOOKING_LINK },
     };
 };
 

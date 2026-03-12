@@ -145,7 +145,8 @@ const createTemplateSchema = z
         channel: messageChannelSchema,
         subject: z.string().max(200, "Subject must be less than 200 characters").optional(),
         body: z.string().min(1, "Body is required"),
-        scheduleLink: z.string().url("Invalid schedule link URL"),
+        // scheduleLink may be omitted; use server-side defaults when missing
+        scheduleLink: z.string().url("Invalid schedule link URL").optional(),
         variables: z.record(z.any()).optional(),
     })
     .strict()

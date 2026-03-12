@@ -45,9 +45,9 @@ const sendSms = async ({ to, body }) => {
             return { success: false, error: "Twilio client not configured" };
         }
 
-        const fromNumber = process.env.TWILIO_PHONE_NUMBER;
+        const fromNumber = process.env.TWILIO_PHONE_NUMBER || process.env.TWILIO_FROM_NUMBER;
         if (!fromNumber) {
-            logger.warn("TWILIO_PHONE_NUMBER not set, skipping SMS send");
+            logger.warn("TWILIO_PHONE_NUMBER / TWILIO_FROM_NUMBER not set, skipping SMS send");
             return { success: false, error: "Twilio phone number not configured" };
         }
 
@@ -138,7 +138,7 @@ const sendBulkSms = async (messages) => {
 const verifyConfiguration = async () => {
     const accountSid = process.env.TWILIO_ACCOUNT_SID;
     const authToken = process.env.TWILIO_AUTH_TOKEN;
-    const phoneNumber = process.env.TWILIO_PHONE_NUMBER;
+    const phoneNumber = process.env.TWILIO_PHONE_NUMBER || process.env.TWILIO_FROM_NUMBER;
 
     if (!accountSid) {
         return { configured: false, error: "TWILIO_ACCOUNT_SID not set" };
@@ -149,7 +149,7 @@ const verifyConfiguration = async () => {
     }
 
     if (!phoneNumber) {
-        return { configured: false, error: "TWILIO_PHONE_NUMBER not set" };
+        return { configured: false, error: "TWILIO_PHONE_NUMBER or TWILIO_FROM_NUMBER not set" };
     }
 
     // Try to verify the account

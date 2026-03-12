@@ -11,27 +11,45 @@ const logger = createLogger("reminder-cron");
  * Default: daily at 8:00 AM ('0 8 * * *')
  */
 const startReminderCron = () => {
-    const schedule = process.env.REMINDER_CRON_SCHEDULE || "0 8 * * *";
+    // Default: run every minute to keep scheduling precise (and avoid missing due reminders)
+    const schedule = process.env.REMINDER_CRON_SCHEDULE || "* * * * *";
+    const timezone = process.env.REMINDER_CRON_TIMEZONE || "UTC";
 
     if (!cron.validate(schedule)) {
         logger.error("Invalid cron schedule expression", { schedule });
         return null;
     }
 
-    const job = cron.schedule(schedule, async () => {
-        logger.info("Reminder cron job started");
-        try {
-            const result = await reminderService.processPendingReminders();
-            logger.info("Reminder cron job completed", result);
-        } catch (error) {
-            logger.error("Reminder cron job failed", {
-                error: error.message,
-                stack: error.stack,
-            });
-        }
-    });
+    let isRunning = false;
 
-    logger.info("Reminder cron job scheduled", { schedule });
+    const job = cron.schedule(
+        schedule,
+        async () => {
+            if (isRunning) {
+                logger.warn("Reminder cron job skipped because previous run is still in progress");
+                return;
+            }
+
+            isRunning = true;
+            logger.info("Reminder cron job started", { schedule, timezone, now: new Date().toISOString() });
+            try {
+                const result = await reminderService.processPendingReminders({ triggeredBy: "cron" });
+                logger.info("Reminder cron job completed", result);
+            } catch (error) {
+                logger.error("Reminder cron job failed", {
+                    error: error.message,
+                    stack: error.stack,
+                });
+            } finally {
+                isRunning = false;
+            }
+        },
+        {
+            timezone,
+        }
+    );
+
+    logger.info("Reminder cron job scheduled", { schedule, timezone });
     return job;
 };
 

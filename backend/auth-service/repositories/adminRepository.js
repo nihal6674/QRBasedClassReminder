@@ -293,6 +293,33 @@ const deactivateAdmin = async (adminId) => {
 };
 
 /**
+ * Activate admin account
+ * @param {string} adminId - Admin ID
+ * @returns {Promise<Object>} Activated admin object
+ */
+const activateAdmin = async (adminId) => {
+  try {
+    const validId = uuidSchema.parse(adminId);
+    const db = await getDB();
+
+    const activatedAdmin = await db.admin.update({
+      where: { id: validId },
+      data: {
+        isActive: true,
+        updatedAt: new Date(),
+      },
+      select: ADMIN_FIELDS.public,
+    });
+
+    logger.info("Admin activated", { adminId: validId });
+    return activatedAdmin;
+  } catch (error) {
+    logger.error("Failed to activate admin", { error: error.message, adminId });
+    throw transformError(error, "activateAdmin");
+  }
+};
+
+/**
  * Check if email exists
  * @param {string} email - Email to check
  * @returns {Promise<boolean>} True if email exists
@@ -398,6 +425,7 @@ module.exports = {
   updateAdminRole,
   updatePassword,
   deactivateAdmin,
+  activateAdmin,
   checkEmailExists,
   findAdmins,
   countByRole,

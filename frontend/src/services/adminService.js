@@ -146,3 +146,13 @@ export const deactivateUser = async (userId) => {
   const response = await apiClient.delete(`/api/admin/manage/${userId}`);
   return response?.data || response;
 };
+
+/**
+ * Activate a user
+ * @param {string} userId - User ID
+ * @returns {Promise<Object>} Result
+ */
+export const activateUser = async (userId) => {
+  const response = await apiClient.put(`/api/admin/manage/${userId}/activate`);
+  return response?.data || response;
+};

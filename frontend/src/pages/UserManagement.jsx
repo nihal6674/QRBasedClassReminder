@@ -7,9 +7,9 @@ import Badge from '@components/shared/Badge';
 import Modal, { ModalFooter } from '@components/shared/Modal';
 import Spinner from '@components/shared/Spinner';
 import Alert, { AlertDescription } from '@components/shared/Alert';
-import { getAllUsers, createUser, changeUserRole, deactivateUser } from '@services/adminService';
+import { getAllUsers, createUser, changeUserRole, deactivateUser, activateUser } from '@services/adminService';
 import { formatDate } from '@utils/formatters';
-import { ArrowLeft, UserPlus, Shield, ShieldCheck, UserX, RefreshCw } from 'lucide-react';
+import { ArrowLeft, UserPlus, UserCheck, Shield, ShieldCheck, UserX, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const UserManagement = () => {
@@ -28,6 +28,10 @@ const UserManagement = () => {
   // Deactivate confirmation
   const [deactivateTarget, setDeactivateTarget] = useState(null);
   const [isDeactivating, setIsDeactivating] = useState(false);
+
+  // Activate confirmation
+  const [activateTarget, setActivateTarget] = useState(null);
+  const [isActivating, setIsActivating] = useState(false);
 
   // Role change confirmation
   const [roleChangeTarget, setRoleChangeTarget] = useState(null);
@@ -105,6 +109,21 @@ const UserManagement = () => {
       toast.error(error.message || 'Failed to deactivate user');
     } finally {
       setIsDeactivating(false);
+    }
+  };
+
+  const handleActivate = async () => {
+    if (!activateTarget) return;
+    setIsActivating(true);
+    try {
+      await activateUser(activateTarget.id);
+      toast.success('User activated');
+      setActivateTarget(null);
+      fetchUsers();
+    } catch (error) {
+      toast.error(error.message || 'Failed to activate user');
+    } finally {
+      setIsActivating(false);
     }
   };
 
@@ -214,25 +233,39 @@ const UserManagement = () => {
                               : 'Never'}
                           </td>
                           <td className="py-3">
-                            {!isSelf && user.isActive && (
+                            {!isSelf && (
                               <div className="flex gap-1">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => setRoleChangeTarget(user)}
-                                  title={`Change to ${user.role === 'ADMIN' ? 'Staff' : 'Admin'}`}
-                                >
-                                  <Shield className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => setDeactivateTarget(user)}
-                                  className="text-destructive hover:text-destructive"
-                                  title="Deactivate user"
-                                >
-                                  <UserX className="h-4 w-4" />
-                                </Button>
+                                {user.isActive ? (
+                                  <>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => setRoleChangeTarget(user)}
+                                      title={`Change to ${user.role === 'ADMIN' ? 'Staff' : 'Admin'}`}
+                                    >
+                                      <Shield className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => setDeactivateTarget(user)}
+                                      className="text-destructive hover:text-destructive"
+                                      title="Deactivate user"
+                                    >
+                                      <UserX className="h-4 w-4" />
+                                    </Button>
+                                  </>
+                                ) : (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setActivateTarget(user)}
+                                    className="text-success hover:text-success"
+                                    title="Activate user"
+                                  >
+                                    <UserCheck className="h-4 w-4" />
+                                  </Button>
+                                )}
                               </div>
                             )}
                           </td>
@@ -396,6 +429,33 @@ const UserManagement = () => {
               </Button>
               <Button variant="destructive" onClick={handleDeactivate} disabled={isDeactivating}>
                 {isDeactivating ? 'Deactivating...' : 'Deactivate'}
+              </Button>
+            </ModalFooter>
+          </div>
+        )}
+      </Modal>
+
+      {/* Activate Confirmation */}
+      <Modal
+        isOpen={!!activateTarget}
+        onClose={() => setActivateTarget(null)}
+        title="Activate User"
+        size="sm"
+      >
+        {activateTarget && (
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Are you sure you want to activate <strong>{activateTarget.name}</strong> ({activateTarget.email})?
+            </p>
+            <p className="text-sm text-green-700 bg-green-50 rounded-md p-3">
+              This user will be able to log in again.
+            </p>
+            <ModalFooter>
+              <Button variant="outline" onClick={() => setActivateTarget(null)} disabled={isActivating}>
+                Cancel
+              </Button>
+              <Button onClick={handleActivate} disabled={isActivating}>
+                {isActivating ? 'Activating...' : 'Activate'}
               </Button>
             </ModalFooter>
           </div>

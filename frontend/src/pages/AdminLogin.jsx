@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@components/shared/Car
 import Button from '@components/shared/Button';
 import useAuthStore from '@store/authStore';
 import toast from 'react-hot-toast';
-import { Lock, Mail, Eye, EyeOff, Shield } from 'lucide-react';
+import { ArrowLeft, Lock, Mail, Eye, EyeOff } from 'lucide-react';
+import logo from '@/assets/logo.png';
 
 const AdminLogin = () => {
     const [email, setEmail] = useState('');
@@ -42,10 +43,22 @@ const AdminLogin = () => {
     return (
         <div className="flex min-h-screen items-center justify-center bg-background p-4">
             <div className="w-full max-w-md space-y-6">
+                <div className="flex items-center justify-start">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => navigate('/')}
+                        className="gap-2"
+                    >
+                        <ArrowLeft className="h-4 w-4" />
+                        Home
+                    </Button>
+                </div>
+
                 {/* Logo/Header */}
                 <div className="text-center">
-                    <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-                        <Shield className="h-7 w-7" />
+                    <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-xl bg-transparent">
+                        <img src={logo} alt="Class Reminder" className="h-16 w-16 object-contain" />
                     </div>
                     <h1 className="text-2xl font-bold text-foreground">Admin Portal</h1>
                     <p className="mt-1 text-sm text-muted-foreground">

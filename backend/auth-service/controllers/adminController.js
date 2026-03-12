@@ -311,6 +311,24 @@ const deactivateAdmin = async (req, res) => {
 };
 
 /**
+ * Activate admin
+ * PUT /api/admin/manage/:adminId/activate
+ */
+const activateAdmin = async (req, res) => {
+  try {
+    const { adminId } = req.params;
+
+    const result = await adminService.activateAdmin(adminId);
+
+    logger.info("Admin activated", { activatedBy: req.admin.id, adminId });
+    return createSuccessResponse(res, { admin: result.admin }, result.message, 200);
+  } catch (error) {
+    logger.error("Activate admin failed", { error: error.message, adminId: req.params?.adminId });
+    return createErrorResponse(res, error, "activateAdmin");
+  }
+};
+
+/**
  * Get admin statistics
  * GET /api/admin/manage/stats
  */
@@ -347,5 +365,6 @@ module.exports = {
   updateAdmin,
   changeRole,
   deactivateAdmin,
+  activateAdmin,
   getStats,
 };

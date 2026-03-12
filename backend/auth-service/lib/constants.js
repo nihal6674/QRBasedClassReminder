@@ -232,6 +232,7 @@ const SUCCESS_MESSAGES = {
     PROFILE_UPDATED: "Profile updated successfully",
     PASSWORD_CHANGED: "Password changed successfully",
     DEACTIVATED: "Admin account deactivated successfully",
+    ACTIVATED: "Admin account activated successfully",
   },
   SESSION: {
     CREATED: "Session created successfully",
