@@ -35,20 +35,30 @@ const loginAdmin = async (loginData, requestMetadata = {}) => {
   try {
     const validatedData = loginAdminSchema.parse(loginData);
 
+    console.log(`[LOGIN ATTEMPT] Email: ${validatedData.email}`, { NODE_ENV: process.env.NODE_ENV, DB_URL_AVAILABLE: !!process.env.DATABASE_URL });
+
     // Find admin by email
     const admin = await adminRepository.findByEmail(validatedData.email, true);
+    console.log(`[LOGIN LOOKUP] Found admin:`, admin ? `YES (Role: ${admin.role})` : `NO`);
+    
     if (!admin) {
+      console.error(`[LOGIN FAIL] No admin found for email: ${validatedData.email}`);
       throw AuthenticationError("Invalid credentials", "INVALID_CREDENTIALS");
     }
 
     // Check if admin is active
     if (!admin.isActive) {
+      console.error(`[LOGIN FAIL] Admin account is deactivated: ${validatedData.email}`);
       throw AuthenticationError("Account is deactivated", "ACCOUNT_DEACTIVATED");
     }
 
     // Verify password
+    console.log(`[LOGIN PASSWORD] Verifying password for: ${validatedData.email}`);
     const passwordMatch = await comparePassword(validatedData.password, admin.password);
+    console.log(`[LOGIN PASSWORD RESULT] Match: ${passwordMatch}`);
+    
     if (!passwordMatch) {
+      console.error(`[LOGIN FAIL] Password mismatch for: ${validatedData.email}`);
       throw AuthenticationError("Invalid credentials", "INVALID_CREDENTIALS");
     }
 
@@ -59,6 +69,7 @@ const loginAdmin = async (loginData, requestMetadata = {}) => {
       role: admin.role,
     };
 
+    console.log(`[LOGIN SUCCESS] Generating tokens for: ${validatedData.email}`);
     const { accessToken, refreshToken } = generateTokens(tokenPayload);
 
     // Create session
