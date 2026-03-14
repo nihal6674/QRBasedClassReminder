@@ -193,9 +193,9 @@ const MyRegistrations = () => {
         </div>
       ) : (
         signups.map((signup) => (
-          <div key={signup.id} className="flex items-start justify-between rounded-lg border p-3">
+          <div key={signup.id} className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-0 rounded-lg border p-3">
             <div className="flex items-start gap-3">
-              <div className="rounded-md bg-primary/10 p-2">
+              <div className="rounded-md bg-primary/10 p-2 shrink-0">
                 <BookOpen className="h-4 w-4 text-primary" />
               </div>
               <div>
@@ -204,17 +204,17 @@ const MyRegistrations = () => {
                 </p>
                 <div className="mt-1 flex flex-col gap-1 text-xs text-muted-foreground">
                   <div className="flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />
+                    <Calendar className="h-3 w-3 shrink-0" />
                     <span>1st Reminder: {formatDate(signup.firstReminderDate)}</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />
+                    <Calendar className="h-3 w-3 shrink-0" />
                     <span>2nd Reminder: {formatDate(signup.secondReminderDate)}</span>
                   </div>
                 </div>
               </div>
             </div>
-            <Badge variant={getStatusBadgeVariant(signup.status)}>
+            <Badge variant={getStatusBadgeVariant(signup.status)} className="self-start sm:self-auto ml-11 sm:ml-0">
               {signup.status}
             </Badge>
           </div>
@@ -380,9 +380,9 @@ const MyRegistrations = () => {
             return (
               <div key={signup.id} className="rounded-lg border p-4 space-y-3">
                 {/* Class info header */}
-                <div className="flex items-start justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-0">
                   <div className="flex items-start gap-3">
-                    <div className="rounded-md bg-primary/10 p-2">
+                    <div className="rounded-md bg-primary/10 p-2 shrink-0">
                       <BookOpen className="h-4 w-4 text-primary" />
                     </div>
                     <div>
@@ -391,17 +391,17 @@ const MyRegistrations = () => {
                       </p>
                       <div className="mt-1 flex flex-col gap-1 text-xs text-muted-foreground">
                         <div className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
+                          <Calendar className="h-3 w-3 shrink-0" />
                           <span>1st Reminder: {formatDate(signup.firstReminderDate)}</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
+                          <Calendar className="h-3 w-3 shrink-0" />
                           <span>2nd Reminder: {formatDate(signup.secondReminderDate)}</span>
                         </div>
                       </div>
                     </div>
                   </div>
-                  <Badge variant={getStatusBadgeVariant(signup.status)}>
+                  <Badge variant={getStatusBadgeVariant(signup.status)} className="self-start sm:self-auto ml-11 sm:ml-0">
                     {signup.status}
                   </Badge>
                 </div>

@@ -136,12 +136,12 @@ const UserManagement = () => {
       <div className="mx-auto max-w-5xl space-y-6">
         {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" onClick={() => navigate('/admin')}>
+          <div className="flex items-start sm:items-center gap-3">
+            <Button variant="ghost" size="sm" onClick={() => navigate('/admin')} className="mt-1 sm:mt-0">
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div>
-              <h1 className="text-3xl font-bold tracking-tight text-foreground">
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
                 User Management
               </h1>
               <p className="mt-1 text-sm text-muted-foreground">
@@ -149,12 +149,12 @@ const UserManagement = () => {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={fetchUsers} disabled={isLoading}>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <Button variant="outline" onClick={fetchUsers} disabled={isLoading} className="flex-1 sm:flex-none">
               <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
-            <Button onClick={() => setIsAddModalOpen(true)}>
+            <Button onClick={() => setIsAddModalOpen(true)} className="flex-1 sm:flex-none">
               <UserPlus className="mr-2 h-4 w-4" />
               Add User
             </Button>
@@ -183,97 +183,174 @@ const UserManagement = () => {
             ) : users.length === 0 ? (
               <p className="py-8 text-center text-muted-foreground">No users found</p>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b text-left">
-                      <th className="pb-3 pr-4 font-medium text-muted-foreground">Name</th>
-                      <th className="pb-3 pr-4 font-medium text-muted-foreground">Email</th>
-                      <th className="pb-3 pr-4 font-medium text-muted-foreground">Role</th>
-                      <th className="pb-3 pr-4 font-medium text-muted-foreground">Status</th>
-                      <th className="pb-3 pr-4 font-medium text-muted-foreground">Last Login</th>
-                      <th className="pb-3 font-medium text-muted-foreground">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {users.map((user) => {
-                      const isSelf = user.id === admin?.id;
-                      return (
-                        <tr key={user.id} className="border-b last:border-0">
-                          <td className="py-3 pr-4 font-medium text-foreground">
-                            {user.name}
-                            {isSelf && (
-                              <span className="ml-2 text-xs text-muted-foreground">(you)</span>
+              <div className="w-full">
+                {/* Mobile View */}
+                <div className="md:hidden space-y-4 pt-2">
+                  {users.map((user) => {
+                    const isSelf = user.id === admin?.id;
+                    return (
+                      <div key={user.id} className="rounded-lg border p-4 space-y-3">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <div className="font-semibold text-foreground">
+                              {user.name} {isSelf && <span className="text-xs text-muted-foreground font-normal">(you)</span>}
+                            </div>
+                            <div className="text-sm text-muted-foreground">{user.email}</div>
+                          </div>
+                          <Badge variant={user.isActive ? 'success' : 'error'}>
+                            {user.isActive ? 'Active' : 'Inactive'}
+                          </Badge>
+                        </div>
+                        
+                        <div className="flex items-center gap-3 text-sm">
+                          <Badge variant={user.role === 'ADMIN' ? 'default' : 'secondary'} className="h-6">
+                            {user.role === 'ADMIN' ? (
+                              <span className="flex items-center gap-1">
+                                <ShieldCheck className="h-3 w-3" /> Admin
+                              </span>
+                            ) : (
+                              <span className="flex items-center gap-1">
+                                <Shield className="h-3 w-3" /> Staff
+                              </span>
                             )}
-                          </td>
-                          <td className="py-3 pr-4 text-muted-foreground">{user.email}</td>
-                          <td className="py-3 pr-4">
-                            <Badge variant={user.role === 'ADMIN' ? 'default' : 'secondary'}>
-                              {user.role === 'ADMIN' ? (
-                                <span className="flex items-center gap-1">
-                                  <ShieldCheck className="h-3 w-3" />
-                                  Admin
-                                </span>
-                              ) : (
-                                <span className="flex items-center gap-1">
-                                  <Shield className="h-3 w-3" />
-                                  Staff
-                                </span>
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            Login: {user.lastLoginAt ? formatDate(user.lastLoginAt, 'MMM dd, yyyy') : 'Never'}
+                          </span>
+                        </div>
+
+                        {!isSelf && (
+                          <div className="flex gap-2 pt-3 border-t">
+                            {user.isActive ? (
+                              <>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="flex-1"
+                                  onClick={() => setRoleChangeTarget(user)}
+                                >
+                                  <Shield className="h-4 w-4 mr-2" /> 
+                                  {user.role === 'ADMIN' ? 'Make Staff' : 'Make Admin'}
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="flex-1 text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20"
+                                  onClick={() => setDeactivateTarget(user)}
+                                >
+                                  <UserX className="h-4 w-4 mr-2" /> Deactivate
+                                </Button>
+                              </>
+                            ) : (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="w-full text-success hover:bg-success/10 hover:text-success border-success/20"
+                                onClick={() => setActivateTarget(user)}
+                              >
+                                <UserCheck className="h-4 w-4 mr-2" /> Activate
+                              </Button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Desktop View */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b text-left">
+                        <th className="pb-3 pr-4 font-medium text-muted-foreground">Name</th>
+                        <th className="pb-3 pr-4 font-medium text-muted-foreground">Email</th>
+                        <th className="pb-3 pr-4 font-medium text-muted-foreground">Role</th>
+                        <th className="pb-3 pr-4 font-medium text-muted-foreground">Status</th>
+                        <th className="pb-3 pr-4 font-medium text-muted-foreground">Last Login</th>
+                        <th className="pb-3 font-medium text-muted-foreground">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {users.map((user) => {
+                        const isSelf = user.id === admin?.id;
+                        return (
+                          <tr key={user.id} className="border-b last:border-0">
+                            <td className="py-3 pr-4 font-medium text-foreground">
+                              {user.name}
+                              {isSelf && (
+                                <span className="ml-2 text-xs text-muted-foreground">(you)</span>
                               )}
-                            </Badge>
-                          </td>
-                          <td className="py-3 pr-4">
-                            <Badge variant={user.isActive ? 'success' : 'error'}>
-                              {user.isActive ? 'Active' : 'Inactive'}
-                            </Badge>
-                          </td>
-                          <td className="py-3 pr-4 text-muted-foreground">
-                            {user.lastLoginAt
-                              ? formatDate(user.lastLoginAt, 'MMM dd, yyyy hh:mm a')
-                              : 'Never'}
-                          </td>
-                          <td className="py-3">
-                            {!isSelf && (
-                              <div className="flex gap-1">
-                                {user.isActive ? (
-                                  <>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => setRoleChangeTarget(user)}
-                                      title={`Change to ${user.role === 'ADMIN' ? 'Staff' : 'Admin'}`}
-                                    >
-                                      <Shield className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => setDeactivateTarget(user)}
-                                      className="text-destructive hover:text-destructive"
-                                      title="Deactivate user"
-                                    >
-                                      <UserX className="h-4 w-4" />
-                                    </Button>
-                                  </>
+                            </td>
+                            <td className="py-3 pr-4 text-muted-foreground">{user.email}</td>
+                            <td className="py-3 pr-4">
+                              <Badge variant={user.role === 'ADMIN' ? 'default' : 'secondary'}>
+                                {user.role === 'ADMIN' ? (
+                                  <span className="flex items-center gap-1">
+                                    <ShieldCheck className="h-3 w-3" />
+                                    Admin
+                                  </span>
                                 ) : (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setActivateTarget(user)}
-                                    className="text-success hover:text-success"
-                                    title="Activate user"
-                                  >
-                                    <UserCheck className="h-4 w-4" />
-                                  </Button>
+                                  <span className="flex items-center gap-1">
+                                    <Shield className="h-3 w-3" />
+                                    Staff
+                                  </span>
                                 )}
-                              </div>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                              </Badge>
+                            </td>
+                            <td className="py-3 pr-4">
+                              <Badge variant={user.isActive ? 'success' : 'error'}>
+                                {user.isActive ? 'Active' : 'Inactive'}
+                              </Badge>
+                            </td>
+                            <td className="py-3 pr-4 text-muted-foreground">
+                              {user.lastLoginAt
+                                ? formatDate(user.lastLoginAt, 'MMM dd, yyyy hh:mm a')
+                                : 'Never'}
+                            </td>
+                            <td className="py-3">
+                              {!isSelf && (
+                                <div className="flex gap-1">
+                                  {user.isActive ? (
+                                    <>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setRoleChangeTarget(user)}
+                                        title={`Change to ${user.role === 'ADMIN' ? 'Staff' : 'Admin'}`}
+                                      >
+                                        <Shield className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setDeactivateTarget(user)}
+                                        className="text-destructive hover:text-destructive"
+                                        title="Deactivate user"
+                                      >
+                                        <UserX className="h-4 w-4" />
+                                      </Button>
+                                    </>
+                                  ) : (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => setActivateTarget(user)}
+                                      className="text-success hover:text-success"
+                                      title="Activate user"
+                                    >
+                                      <UserCheck className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
           </CardContent>

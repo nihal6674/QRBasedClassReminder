@@ -117,34 +117,35 @@ const AdminDashboard = () => {
               Manage training registrations and send reminders
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {admin && (
-              <span className="text-sm text-muted-foreground mr-2">
+              <span className="text-sm text-muted-foreground mr-2 w-full sm:w-auto mb-2 sm:mb-0">
                 {admin.name || admin.email}
               </span>
             )}
-            <Button onClick={() => setIsAddStudentModalOpen(true)}>
+            <Button onClick={() => setIsAddStudentModalOpen(true)} className="flex-1 sm:flex-none">
               <UserPlus className="mr-2 h-4 w-4" />
               Add Student
             </Button>
             {admin?.role === 'ADMIN' && (
-              <Button variant="outline" onClick={() => navigate('/admin/users')}>
+              <Button variant="outline" onClick={() => navigate('/admin/users')} className="flex-1 sm:flex-none">
                 <ShieldCheck className="mr-2 h-4 w-4" />
                 Users
               </Button>
             )}
             {admin?.role === 'ADMIN' && (
-              <Button variant="outline" onClick={() => navigate('/admin/templates')}>
+              <Button variant="outline" onClick={() => navigate('/admin/templates')} className="flex-1 sm:flex-none">
                 <FileText className="mr-2 h-4 w-4" />
                 Templates
               </Button>
             )}
-            <Button variant="outline" onClick={handleRefresh} disabled={isLoading}>
+            <Button variant="outline" onClick={handleRefresh} disabled={isLoading} className="flex-1 sm:flex-none">
               <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
             <Button
               variant="outline"
+              className="flex-1 sm:flex-none"
               onClick={async () => {
                 await logout();
                 navigate('/login');
@@ -211,7 +212,7 @@ const AdminDashboard = () => {
             <div className="space-y-4">
               {/* Search and Export */}
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex-1 sm:max-w-sm">
+                <div className="flex-1 w-full sm:max-w-sm">
                   <SearchBar
                     value={searchQuery}
                     onChange={setSearchQuery}
@@ -219,16 +220,17 @@ const AdminDashboard = () => {
                     placeholder="Search by email, phone, or training type..."
                   />
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                   <Button
                     variant="outline"
                     onClick={handleExportFiltered}
                     disabled={totalCount === 0}
+                    className="w-full sm:w-auto"
                   >
                     <Download className="mr-2 h-4 w-4" />
                     Export Filtered ({totalCount})
                   </Button>
-                  <Button variant="outline" onClick={handleExportAll} disabled={allSignups.length === 0}>
+                  <Button variant="outline" onClick={handleExportAll} disabled={allSignups.length === 0} className="w-full sm:w-auto">
                     <Download className="mr-2 h-4 w-4" />
                     Export All ({allSignups.length})
                   </Button>

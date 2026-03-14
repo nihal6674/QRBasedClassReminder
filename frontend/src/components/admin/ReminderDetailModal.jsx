@@ -162,7 +162,7 @@ const ReminderDetailModal = ({ isOpen, onClose, signup, onRefresh }) => {
               <span className="text-muted-foreground">Signup Date:</span>
               <p className="font-medium">{formatDate(signup.createdAt, 'MMM dd, yyyy')}</p>
             </div>
-            <div className="col-span-2 grid grid-cols-2 gap-3 mt-2 pt-2 border-t border-border/50">
+            <div className="col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2 pt-2 border-t border-border/50">
               <div>
                 <span className="text-muted-foreground text-[10px] font-semibold uppercase">1st Reminder</span>
                 <div className="mt-1 space-y-1">
@@ -173,7 +173,7 @@ const ReminderDetailModal = ({ isOpen, onClose, signup, onRefresh }) => {
                   {signup.firstReminderSentAt && <p className="text-xs text-green-600">Sent: {formatDate(signup.firstReminderSentAt, 'MMM dd, yyyy hh:mm a')}</p>}
                 </div>
               </div>
-              <div className="border-l pl-3">
+              <div className="border-t sm:border-t-0 sm:border-l pt-3 sm:pt-0 sm:pl-3">
                 <span className="text-muted-foreground text-[10px] font-semibold uppercase">2nd Reminder</span>
                 <div className="mt-1 space-y-1">
                   <div className="flex items-center justify-between pr-2">

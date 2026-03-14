@@ -53,8 +53,123 @@ const SignupsTable = ({
 
   return (
     <div className="rounded-lg border bg-card">
-      <Table>
-        <TableHeader>
+      <div className="md:hidden space-y-4 p-4">
+        {/* Select All Checkbox for Mobile */}
+        {signups.length > 0 && (
+          <div className="flex items-center gap-2 mb-4 p-2 bg-muted/30 rounded-md">
+            <input
+              type="checkbox"
+              id="selectAllMobile"
+              className="h-4 w-4 rounded border-gray-300"
+              checked={signups.every((s) => selectedSignupIds?.includes(s.id))}
+              onChange={(e) => onSelectAll?.(e.target.checked)}
+            />
+            <label htmlFor="selectAllMobile" className="text-sm font-medium">Select All Current Page</label>
+          </div>
+        )}
+
+        {signups.map((signup) => {
+          const isSending = sendingReminders.includes(signup.id);
+          const isSelected = selectedSignupIds?.includes(signup.id);
+
+          return (
+            <div key={signup.id} className={clsx("rounded-lg border p-4 space-y-3 relative", isSelected && "bg-muted/50")}>
+              {/* Checkbox */}
+              <div className="absolute top-4 right-4 z-10">
+                <input
+                  type="checkbox"
+                  className="h-5 w-5 rounded border-gray-300 shadow-sm"
+                  checked={isSelected}
+                  onChange={() => onSelectSignup?.(signup.id)}
+                />
+              </div>
+
+              {/* Header Info */}
+              <div className="pr-8">
+                <div className="font-semibold text-lg">{signup.student?.name || 'Unknown'}</div>
+                <div className="text-sm text-primary font-medium">{getClassTypeLabel(signup.classType)}</div>
+                <div className="mt-1"><Badge className={getStatusColor(signup.status)}>{signup.status}</Badge></div>
+              </div>
+
+              {/* Contact Info */}
+              <div className="space-y-1.5 text-sm text-muted-foreground bg-muted/20 p-2 rounded w-full">
+                {signup.student?.email && (
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-4 w-4 shrink-0" />
+                    <span className={clsx("truncate", signup.student.optedOutEmail || signup.optedOutEmail ? "line-through text-muted-foreground/50" : "")}>{formatEmail(signup.student.email)}</span>
+                    {(signup.student.optedOutEmail || signup.optedOutEmail) && <Badge variant="warning" className="text-[9px] px-1 py-0 h-4 min-h-[16px] leading-[14px] shrink-0">Opted Out</Badge>}
+                  </div>
+                )}
+                {signup.student?.phone && (
+                  <div className="flex items-center gap-2">
+                    <Phone className="h-4 w-4 shrink-0" />
+                    <span className={clsx("truncate", signup.student.optedOutSms || signup.optedOutSms ? "line-through text-muted-foreground/50" : "")}>{formatPhone(signup.student.phone)}</span>
+                    {(signup.student.optedOutSms || signup.optedOutSms) && <Badge variant="warning" className="text-[9px] px-1 py-0 h-4 min-h-[16px] leading-[14px] shrink-0">Opted Out</Badge>}
+                  </div>
+                )}
+              </div>
+
+              {/* Reminders Info */}
+              <div className="grid grid-cols-2 gap-3 text-sm mt-2">
+                <div>
+                  <span className="text-xs text-muted-foreground block mb-0.5">1st Reminder</span>
+                  <div className="font-medium whitespace-nowrap">{formatDate(signup.firstReminderDate, 'MMM dd, yyyy')}</div>
+                  <Badge className={clsx("text-[10px] px-1 py-0 font-normal mt-0.5", getStatusColor(signup.firstReminderStatus))}>{signup.firstReminderStatus}</Badge>
+                </div>
+                <div>
+                   <span className="text-xs text-muted-foreground block mb-0.5">2nd Reminder</span>
+                   <div className="font-medium whitespace-nowrap">{formatDate(signup.secondReminderDate, 'MMM dd, yyyy')}</div>
+                   <Badge className={clsx("text-[10px] px-1 py-0 font-normal mt-0.5", getStatusColor(signup.secondReminderStatus))}>{signup.secondReminderStatus}</Badge>
+                </div>
+              </div>
+
+              <div className="text-xs text-muted-foreground pt-1">
+                 Registered: {formatDate(signup.createdAt, 'MMM dd, yyyy')}
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center justify-end gap-2 pt-3 border-t">
+                {(signup.status === 'PENDING' || signup.status === 'FAILED') && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full sm:w-auto"
+                    onClick={() => onSendReminder?.(signup.id)}
+                    disabled={isSending}
+                  >
+                    {isSending ? (
+                      <span className="flex items-center justify-center gap-1">
+                        <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                        </svg>
+                        Sending
+                      </span>
+                    ) : (
+                      <span className="flex items-center justify-center gap-1">
+                        <Send className="h-3.5 w-3.5" />
+                        Send Now
+                      </span>
+                    )}
+                  </Button>
+                )}
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="w-full sm:w-auto"
+                  onClick={() => onViewDetails?.(signup)}
+                >
+                  <MoreHorizontal className="h-4 w-4 mr-1" /> Details
+                </Button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="hidden md:block">
+        <Table>
+          <TableHeader>
           <TableRow>
             <TableHead className="w-12">
               <input
@@ -186,6 +301,7 @@ const SignupsTable = ({
           })}
         </TableBody>
       </Table>
+      </div>
     </div>
   );
 };

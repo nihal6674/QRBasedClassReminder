@@ -109,20 +109,22 @@ const TemplateManager = () => {
     <div className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
       <div className="mx-auto max-w-4xl space-y-6">
         {/* Header */}
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" onClick={() => navigate('/admin')}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              Message Templates
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              View and edit reminder messages for each training type
-            </p>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="sm" onClick={() => navigate('/admin')}>
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div className="flex-1">
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+                Message Templates
+              </h1>
+              <p className="text-sm text-muted-foreground mt-1">
+                View and edit reminder messages for each training type
+              </p>
+            </div>
           </div>
-          <Button variant="outline" onClick={fetchTemplates} disabled={isLoading}>
-            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+          <Button variant="outline" onClick={fetchTemplates} disabled={isLoading} className="w-full sm:w-auto mt-2 sm:mt-0">
+            <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} /> Refresh
           </Button>
         </div>
 
@@ -161,10 +163,10 @@ const TemplateManager = () => {
                   className="cursor-pointer"
                   onClick={() => toggleExpand(classType)}
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <CardTitle className="text-base">{label}</CardTitle>
-                    <div className="flex items-center gap-4">
-                      <div className="flex gap-2 text-xs">
+                    <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto">
+                      <div className="flex flex-wrap gap-2 text-xs">
                         <span className={`flex items-center gap-1 ${emailTemplate ? 'text-green-500' : 'text-muted-foreground'}`}>
                           <Mail className="h-3 w-3" />
                           {emailTemplate ? 'Configured' : 'Default'}
@@ -174,7 +176,7 @@ const TemplateManager = () => {
                           {smsTemplate ? 'Configured' : 'Default'}
                         </span>
                       </div>
-                      {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
                     </div>
                   </div>
                 </CardHeader>
