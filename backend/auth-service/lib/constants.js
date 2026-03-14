@@ -260,7 +260,7 @@ const JWT_CONFIG = {
   cookieOptions: {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+    sameSite: process.env.COOKIE_SAME_SITE || "lax", // Better compatibility across devices (iOS/Safari)
     domain: process.env.COOKIE_DOMAIN || undefined,
   },
 };
