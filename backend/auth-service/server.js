@@ -41,9 +41,7 @@ const adminRepository = require("./repositories/adminRepository");
 const { hashPassword } = require("./lib/utils");
 
 // Load environment variables
-require("dotenv").config({
-  path: path.resolve(__dirname, "../../.env"),
-});
+require("dotenv").config();
 
 const app = express();
 

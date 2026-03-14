@@ -63,6 +63,8 @@ const AuthorizationError = createErrorFactory(
 const isValidationError = (error) => error.name === "ValidationError";
 const isConflictError = (error) => error.name === "ConflictError";
 const isNotFoundError = (error) => error.name === "NotFoundError";
+const isAuthenticationError = (error) => error.name === "AuthenticationError";
+const isAuthorizationError = (error) => error.name === "AuthorizationError";
 /**
  * Type guard to check if an error is a ZodError
  * @param {any} error - The error to check
@@ -240,6 +242,8 @@ module.exports = {
   isValidationError,
   isConflictError,
   isNotFoundError,
+  isAuthenticationError,
+  isAuthorizationError,
 
   // Transformers
   transformPrismaError,

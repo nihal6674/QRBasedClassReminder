@@ -7,6 +7,8 @@ const {
   isValidationError,
   isConflictError,
   isNotFoundError,
+  isAuthenticationError,
+  isAuthorizationError,
   AuthenticationError,
   // eslint-disable-next-line
 } = require('../shared/utils/errors');
@@ -110,6 +112,8 @@ const createErrorResponse = (res, error, context = "") => {
   if (isValidationError(transformedError)) statusCode = 400;
   if (isConflictError(transformedError)) statusCode = 409;
   if (isNotFoundError(transformedError)) statusCode = 404;
+  if (isAuthenticationError(transformedError)) statusCode = 401;
+  if (isAuthorizationError(transformedError)) statusCode = 403;
 
   return res.status(statusCode).json({
     success: false,

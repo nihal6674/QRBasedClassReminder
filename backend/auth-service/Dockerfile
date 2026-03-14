@@ -7,14 +7,14 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies (postinstall will run prisma generate)
-RUN npm ci --include=dev
+# Install dependencies (this will trigger postinstall script)
+RUN npm ci
 
 # Copy application code
 COPY . .
 
-# Regenerate Prisma client for the correct platform
-RUN npx prisma generate --schema=./shared/prisma/schema.prisma
+# Regenerate Prisma client for the correct platform (in case postinstall didn't run due to env issues)
+RUN npm run build || npx prisma generate --schema=./shared/prisma/schema.prisma || true
 
 # Expose the service port
 EXPOSE 3001
