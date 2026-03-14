@@ -81,8 +81,12 @@ const AdminDashboard = () => {
 
   const handleSendReminder = async (signupId) => {
     try {
-      await sendReminderAsync(signupId);
-      toast.success('Reminder sent successfully');
+      const response = await sendReminderAsync(signupId);
+      if (response?.data?.overallStatus === 'FAILED') {
+        toast.error('Failed to send reminder. Student may have opted out or lacks contact info.');
+      } else {
+        toast.success('Reminder sent successfully');
+      }
       await refreshData();
     } catch (error) {
       toast.error(`Failed to send reminder: ${error.message}`);

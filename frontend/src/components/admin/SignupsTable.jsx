@@ -112,13 +112,15 @@ const SignupsTable = ({
                       {signup.student?.email && (
                         <div className="flex items-center gap-1">
                           <Mail className="h-3 w-3" />
-                          <span>{formatEmail(signup.student.email)}</span>
+                          <span className={clsx(signup.student.optedOutEmail || signup.optedOutEmail ? "line-through text-muted-foreground/50" : "")}>{formatEmail(signup.student.email)}</span>
+                          {(signup.student.optedOutEmail || signup.optedOutEmail) && <Badge variant="warning" className="text-[9px] px-1 py-0 h-4 min-h-[16px] leading-[14px]">Opted Out</Badge>}
                         </div>
                       )}
                       {signup.student?.phone && (
                         <div className="flex items-center gap-1">
                           <Phone className="h-3 w-3" />
-                          <span>{formatPhone(signup.student.phone)}</span>
+                          <span className={clsx(signup.student.optedOutSms || signup.optedOutSms ? "line-through text-muted-foreground/50" : "")}>{formatPhone(signup.student.phone)}</span>
+                          {(signup.student.optedOutSms || signup.optedOutSms) && <Badge variant="warning" className="text-[9px] px-1 py-0 h-4 min-h-[16px] leading-[14px]">Opted Out</Badge>}
                         </div>
                       )}
                     </div>

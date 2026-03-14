@@ -51,8 +51,12 @@ const ReminderDetailModal = ({ isOpen, onClose, signup, onRefresh }) => {
 
   const handleSendReminder = async () => {
     try {
-      await sendReminderAsync(signup.id);
-      toast.success('Reminder sent successfully');
+      const response = await sendReminderAsync(signup.id);
+      if (response?.data?.overallStatus === 'FAILED') {
+        toast.error('Failed to send reminder. Student may have opted out or lacks contact info.');
+      } else {
+        toast.success('Reminder sent successfully');
+      }
       onRefresh?.();
       loadDeliveryDetails();
     } catch (error) {
@@ -132,15 +136,15 @@ const ReminderDetailModal = ({ isOpen, onClose, signup, onRefresh }) => {
             {student?.email && (
               <div className="flex items-center gap-2 text-sm">
                 <Mail className="h-4 w-4 text-muted-foreground" />
-                <span>{student.email}</span>
-                {student.optedOutEmail && <Badge variant="warning">Opted Out</Badge>}
+                <span className={(student.optedOutEmail || signup.optedOutEmail) ? "line-through text-muted-foreground/50" : ""}>{student.email}</span>
+                {(student.optedOutEmail || signup.optedOutEmail) && <Badge variant="warning">Opted Out</Badge>}
               </div>
             )}
             {student?.phone && (
               <div className="flex items-center gap-2 text-sm">
                 <Phone className="h-4 w-4 text-muted-foreground" />
-                <span>{formatPhone(student.phone)}</span>
-                {student.optedOutSms && <Badge variant="warning">Opted Out</Badge>}
+                <span className={(student.optedOutSms || signup.optedOutSms) ? "line-through text-muted-foreground/50" : ""}>{formatPhone(student.phone)}</span>
+                {(student.optedOutSms || signup.optedOutSms) && <Badge variant="warning">Opted Out</Badge>}
               </div>
             )}
           </div>
