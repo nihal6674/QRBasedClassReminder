@@ -76,10 +76,10 @@ const SignupsTable = ({
               <SortButton field="status">Status</SortButton>
             </TableHead>
             <TableHead>
-              <SortButton field="reminderScheduledDate">Reminder Date</SortButton>
+              <SortButton field="firstReminderDate">1st Reminder</SortButton>
             </TableHead>
             <TableHead>
-              <SortButton field="reminderSentAt">Sent At</SortButton>
+              <SortButton field="secondReminderDate">2nd Reminder</SortButton>
             </TableHead>
             <TableHead>
               <SortButton field="createdAt">Signup Date</SortButton>
@@ -130,17 +130,17 @@ const SignupsTable = ({
                 <TableCell>
                   <Badge className={getStatusColor(signup.status)}>{signup.status}</Badge>
                 </TableCell>
-                <TableCell className="text-sm">
-                  {formatDate(signup.reminderScheduledDate, 'MMM dd, yyyy')}
+                <TableCell>
+                  <div className="flex flex-col items-start gap-1">
+                    <span className="text-sm whitespace-nowrap">{formatDate(signup.firstReminderDate, 'MMM dd, yyyy')}</span>
+                    <Badge className={clsx("text-[10px] px-1 py-0 font-normal", getStatusColor(signup.firstReminderStatus))}>{signup.firstReminderStatus}</Badge>
+                  </div>
                 </TableCell>
-                <TableCell className="text-sm">
-                  {signup.reminderSentAt ? (
-                    <span className="text-green-600">
-                      {formatDate(signup.reminderSentAt, 'MMM dd, yyyy')}
-                    </span>
-                  ) : (
-                    <span className="text-muted-foreground">Not sent</span>
-                  )}
+                <TableCell>
+                  <div className="flex flex-col items-start gap-1">
+                    <span className="text-sm whitespace-nowrap">{formatDate(signup.secondReminderDate, 'MMM dd, yyyy')}</span>
+                    <Badge className={clsx("text-[10px] px-1 py-0 font-normal", getStatusColor(signup.secondReminderStatus))}>{signup.secondReminderStatus}</Badge>
+                  </div>
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">
                   {formatDate(signup.createdAt, 'MMM dd, yyyy')}

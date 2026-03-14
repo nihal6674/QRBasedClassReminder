@@ -377,12 +377,15 @@ const completeRegistration = async (data) => {
         }
 
         // Calculate reminder date and create signup
-        const reminderScheduledDate = calculateReminderDate(classType);
+        const { firstReminderDate, secondReminderDate } = calculateReminderDate(classType);
 
         const signup = await signupRepository.createSignup({
             studentId: student.id,
             classType,
-            reminderScheduledDate,
+            firstReminderDate,
+            secondReminderDate,
+            firstReminderStatus: "PENDING",
+            secondReminderStatus: "PENDING",
             status: "PENDING",
         });
 

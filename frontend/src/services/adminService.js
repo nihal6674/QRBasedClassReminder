@@ -64,12 +64,14 @@ export const sendReminder = async (signupId) => {
 /**
  * Reschedule a reminder
  * @param {string} signupId - Signup ID
+ * @param {number} reminderLevel - 1 or 2
  * @param {string} newDate - New scheduled date (ISO string)
  * @returns {Promise<Object>} Updated signup
  */
-export const rescheduleReminder = async (signupId, newDate) => {
+export const rescheduleReminder = async (signupId, reminderLevel, newDate) => {
   return await apiClient.patch(`/api/admin/reminders/${signupId}/reschedule`, {
     reminderScheduledDate: newDate,
+    reminderLevel,
   });
 };
 

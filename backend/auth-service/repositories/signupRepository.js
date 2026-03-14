@@ -29,6 +29,12 @@ const SIGNUP_FIELDS = {
         studentId: true,
         classType: true,
         reminderScheduledDate: true,
+        firstReminderDate: true,
+        secondReminderDate: true,
+        firstReminderStatus: true,
+        secondReminderStatus: true,
+        firstReminderSentAt: true,
+        secondReminderSentAt: true,
         reminderSentAt: true,
         status: true,
         optedOutEmail: true,
@@ -42,6 +48,12 @@ const SIGNUP_FIELDS = {
         studentId: true,
         classType: true,
         reminderScheduledDate: true,
+        firstReminderDate: true,
+        secondReminderDate: true,
+        firstReminderStatus: true,
+        secondReminderStatus: true,
+        firstReminderSentAt: true,
+        secondReminderSentAt: true,
         reminderSentAt: true,
         status: true,
         optedOutEmail: true,
@@ -64,6 +76,10 @@ const SIGNUP_FIELDS = {
         id: true,
         classType: true,
         reminderScheduledDate: true,
+        firstReminderDate: true,
+        secondReminderDate: true,
+        firstReminderStatus: true,
+        secondReminderStatus: true,
         status: true,
         optedOutEmail: true,
         optedOutSms: true,
@@ -150,13 +166,19 @@ const findPendingReminders = async (beforeDate = new Date()) => {
 
         const signups = await db.signup.findMany({
             where: {
-                status: "PENDING",
-                reminderScheduledDate: {
-                    lte: beforeDate,
-                },
+                OR: [
+                    {
+                        firstReminderStatus: "PENDING",
+                        firstReminderDate: { lte: beforeDate },
+                    },
+                    {
+                        secondReminderStatus: "PENDING",
+                        secondReminderDate: { lte: beforeDate },
+                    }
+                ]
             },
             select: SIGNUP_FIELDS.withStudent,
-            orderBy: { reminderScheduledDate: "asc" },
+            orderBy: [{ firstReminderDate: "asc" }, { secondReminderDate: "asc" }],
         });
 
         logger.info("Found pending reminders", { count: signups.length });
@@ -202,20 +224,32 @@ const updateSignup = async (signupId, updateData) => {
  * @param {string} status - New status ('SENT' or 'FAILED')
  * @returns {Promise<Object>} Updated signup
  */
-const updateReminderStatus = async (signupId, status) => {
+const updateReminderStatus = async (signupId, status, reminderLevel = 1) => {
     try {
         const validId = uuidSchema.parse(signupId);
         const validStatus = signupStatusSchema.parse(status);
         const db = await getDB();
 
         const updateData = {
-            status: validStatus,
             updatedAt: new Date(),
         };
 
-        // Set reminderSentAt only if status is SENT
-        if (validStatus === "SENT") {
-            updateData.reminderSentAt = new Date();
+        if (reminderLevel === 1) {
+            updateData.firstReminderStatus = validStatus;
+            if (validStatus === "SENT") {
+                updateData.firstReminderSentAt = new Date();
+            }
+        } else if (reminderLevel === 2) {
+            updateData.secondReminderStatus = validStatus;
+            if (validStatus === "SENT") {
+                updateData.secondReminderSentAt = new Date();
+            }
+        } else {
+            // Legacy fallback
+            updateData.status = validStatus;
+            if (validStatus === "SENT") {
+                updateData.reminderSentAt = new Date();
+            }
         }
 
         const updatedSignup = await db.signup.update({

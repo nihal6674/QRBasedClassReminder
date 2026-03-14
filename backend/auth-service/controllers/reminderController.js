@@ -30,7 +30,7 @@ const sendReminder = async (req, res) => {
 const rescheduleReminder = async (req, res) => {
     try {
         const { signupId } = req.params;
-        const { reminderScheduledDate } = req.body;
+        const { reminderScheduledDate, reminderLevel } = req.body;
 
         if (!reminderScheduledDate) {
             return res.status(400).json({
@@ -38,10 +38,16 @@ const rescheduleReminder = async (req, res) => {
                 error: { message: "reminderScheduledDate is required", code: "VALIDATION_ERROR" },
             });
         }
+        if (!reminderLevel || (Number(reminderLevel) !== 1 && Number(reminderLevel) !== 2)) {
+            return res.status(400).json({
+                success: false,
+                error: { message: "reminderLevel (1 or 2) is required", code: "VALIDATION_ERROR" },
+            });
+        }
 
-        const result = await reminderService.rescheduleReminder(signupId, reminderScheduledDate);
+        const result = await reminderService.rescheduleReminder(signupId, Number(reminderLevel), reminderScheduledDate);
 
-        logger.info("Reminder rescheduled", { signupId });
+        logger.info("Reminder rescheduled", { signupId, reminderLevel });
         return createSuccessResponse(res, result, result.message, 200);
     } catch (error) {
         logger.error("Reschedule reminder failed", { error: error.message });

@@ -109,6 +109,12 @@ const updateSignupSchema = z
         classType: classTypeSchema.optional(),
         reminderScheduledDate: z.coerce.date().optional(),
         reminderSentAt: z.coerce.date().nullable().optional(),
+        firstReminderDate: z.coerce.date().optional(),
+        secondReminderDate: z.coerce.date().optional(),
+        firstReminderSentAt: z.coerce.date().nullable().optional(),
+        secondReminderSentAt: z.coerce.date().nullable().optional(),
+        firstReminderStatus: signupStatusSchema.optional(),
+        secondReminderStatus: signupStatusSchema.optional(),
         status: signupStatusSchema.optional(),
         notes: z.string().max(1000, "Notes must be less than 1000 characters").optional(),
     })
@@ -129,7 +135,7 @@ const signupQuerySchema = z
         page: z.coerce.number().int().min(1).optional(),
         limit: z.coerce.number().int().min(1).optional(), // No max limit - allow fetching all
         sortBy: z
-            .enum(["createdAt", "reminderScheduledDate", "classType", "status"])
+            .enum(["createdAt", "reminderScheduledDate", "firstReminderDate", "secondReminderDate", "classType", "status"])
             .default("createdAt"),
         sortOrder: z.enum(["asc", "desc"]).default("desc"),
     })

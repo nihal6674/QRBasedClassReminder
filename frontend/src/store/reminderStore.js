@@ -31,9 +31,9 @@ const useReminderStore = create((set, get) => ({
   },
 
   // Actions - Reschedule Reminder via API
-  rescheduleReminderAsync: async (signupId, newDate) => {
+  rescheduleReminderAsync: async (signupId, reminderLevel, newDate) => {
     try {
-      const result = await adminService.rescheduleReminder(signupId, newDate);
+      const result = await adminService.rescheduleReminder(signupId, reminderLevel, newDate);
       return result;
     } catch (error) {
       throw error;

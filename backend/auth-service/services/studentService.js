@@ -25,15 +25,26 @@ const CLASS_REMINDER_INTERVALS = {
 };
 
 /**
- * Calculate reminder scheduled date based on class type
+ * Calculate reminder scheduled dates based on class type
  * @param {string} classType - Class type
- * @returns {Date} Scheduled reminder date (months after signup)
+ * @returns {Object} { firstReminderDate, secondReminderDate }
  */
 const calculateReminderDate = (classType) => {
-    const monthsAfterSignup = CLASS_REMINDER_INTERVALS[classType] || 11;
-    const scheduledDate = new Date();
-    scheduledDate.setMonth(scheduledDate.getMonth() + monthsAfterSignup);
-    return scheduledDate;
+    const finalMonth = CLASS_REMINDER_INTERVALS[classType] || 11;
+    
+    // First Reminder: 1st day of the 2nd-to-last month
+    const firstDate = new Date();
+    firstDate.setMonth(firstDate.getMonth() + finalMonth - 1);
+    firstDate.setDate(1);
+    firstDate.setHours(8, 0, 0, 0); // Trigger in morning
+
+    // Second Reminder: 1st day of the last month
+    const secondDate = new Date();
+    secondDate.setMonth(secondDate.getMonth() + finalMonth);
+    secondDate.setDate(1);
+    secondDate.setHours(8, 0, 0, 0);
+
+    return { firstReminderDate: firstDate, secondReminderDate: secondDate };
 };
 
 /**
@@ -88,13 +99,16 @@ const createSignup = async (signupData) => {
         }
 
         // Calculate reminder scheduled date
-        const reminderScheduledDate = calculateReminderDate(classType);
+        const { firstReminderDate, secondReminderDate } = calculateReminderDate(classType);
 
         // Create signup record
         const signup = await signupRepository.createSignup({
             studentId: student.id,
             classType,
-            reminderScheduledDate,
+            firstReminderDate,
+            secondReminderDate,
+            firstReminderStatus: "PENDING",
+            secondReminderStatus: "PENDING",
             status: "PENDING",
         });
 

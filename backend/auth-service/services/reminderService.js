@@ -63,7 +63,7 @@ const buildDefaultMessage = (classTypeName, channel, scheduleLink) => {
  * @returns {Promise<Object>} - { emailResult, smsResult, overallStatus }
  */
 const sendReminder = async (signupId, options = {}) => {
-    const { triggeredBy = "manual" } = options;
+    const { triggeredBy = "manual", reminderLevel = null } = options;
 
     try {
         // 1. Fetch signup with student data
@@ -107,9 +107,11 @@ const sendReminder = async (signupId, options = {}) => {
         const shouldSendEmail = (preference === 'EMAIL' || preference === 'BOTH') && student.email && !student.optedOutEmail && !signup.optedOutEmail;
         const shouldSendSms = (preference === 'SMS' || preference === 'BOTH') && student.phone && !student.optedOutSms && !signup.optedOutSms;
 
+        const dateKey = reminderLevel === 2 ? 'secondReminderDate' : 'firstReminderDate';
         const logMetadata = {
             triggeredBy,
-            scheduledAt: signup.reminderScheduledDate ? signup.reminderScheduledDate.toISOString() : null,
+            reminderLevel,
+            scheduledAt: signup[dateKey] ? signup[dateKey].toISOString() : null,
         };
 
         // 2. Send email if preference allows and student has email
@@ -220,7 +222,11 @@ const sendReminder = async (signupId, options = {}) => {
         }
 
         // 5. Update signup status
-        await signupRepository.updateReminderStatus(signupId, overallStatus);
+        if (reminderLevel) {
+            await signupRepository.updateReminderStatus(signupId, overallStatus, reminderLevel);
+        } else {
+            await signupRepository.updateReminderStatus(signupId, overallStatus);
+        }
 
         logger.info("Reminder processed", {
             signupId,
@@ -246,16 +252,25 @@ const processPendingReminders = async () => {
 
         logger.info("Processing pending reminders", { count: pendingSignups.length });
 
-        let sent = 0;
-        let failed = 0;
+        const now = new Date();
 
         for (const signup of pendingSignups) {
             try {
-                const result = await sendReminder(signup.id, { triggeredBy: "cron" });
-                if (result.overallStatus === "SENT") {
-                    sent++;
-                } else {
-                    failed++;
+                let results = [];
+                // Check First Reminder
+                if (signup.firstReminderStatus === "PENDING" && signup.firstReminderDate && signup.firstReminderDate <= now) {
+                    const r = await sendReminder(signup.id, { triggeredBy: "cron", reminderLevel: 1 });
+                    results.push(r.overallStatus);
+                }
+                // Check Second Reminder
+                if (signup.secondReminderStatus === "PENDING" && signup.secondReminderDate && signup.secondReminderDate <= now) {
+                    const r = await sendReminder(signup.id, { triggeredBy: "cron", reminderLevel: 2 });
+                    results.push(r.overallStatus);
+                }
+
+                for (const status of results) {
+                    if (status === "SENT") sent++;
+                    else failed++;
                 }
             } catch (error) {
                 failed++;
@@ -278,10 +293,11 @@ const processPendingReminders = async () => {
 /**
  * Reschedule a reminder
  * @param {string} signupId - Signup ID
+ * @param {number} reminderLevel - 1 for first reminder, 2 for second reminder
  * @param {Date|string} newDate - New scheduled date
  * @returns {Promise<Object>} Updated signup
  */
-const rescheduleReminder = async (signupId, newDate) => {
+const rescheduleReminder = async (signupId, reminderLevel, newDate) => {
     try {
         const signup = await signupRepository.findById(signupId);
         if (!signup) {
@@ -290,27 +306,34 @@ const rescheduleReminder = async (signupId, newDate) => {
 
         const scheduledDate = new Date(newDate);
 
-        const updatedSignup = await signupRepository.updateSignup(signupId, {
-            reminderScheduledDate: scheduledDate,
-            reminderSentAt: null,
-            status: "PENDING",
-        });
+        const updateData = {};
+        if (Number(reminderLevel) === 1) {
+            updateData.firstReminderDate = scheduledDate;
+            updateData.firstReminderSentAt = null;
+            updateData.firstReminderStatus = "PENDING";
+        } else {
+            updateData.secondReminderDate = scheduledDate;
+            updateData.secondReminderSentAt = null;
+            updateData.secondReminderStatus = "PENDING";
+        }
 
-        logger.info("Reminder rescheduled", { signupId, newDate: scheduledDate });
+        const updatedSignup = await signupRepository.updateSignup(signupId, updateData);
 
-        // If the new scheduled date is now or in the past, send immediately (does not rely on cron)
+        logger.info("Reminder rescheduled", { signupId, reminderLevel, newDate: scheduledDate });
+
+        // If the new scheduled date is now or in the past, send immediately
         let sendResult = null;
         if (scheduledDate <= new Date()) {
             logger.info("Rescheduled reminder is due now (or in the past); sending immediately", {
                 signupId,
                 scheduledDate,
             });
-            sendResult = await sendReminder(signupId, { triggeredBy: "reschedule" });
+            sendResult = await sendReminder(signupId, { triggeredBy: "reschedule", reminderLevel: Number(reminderLevel) });
         }
 
         return {
             signup: updatedSignup,
-            message: "Reminder rescheduled successfully",
+            message: `Reminder ${reminderLevel} rescheduled successfully`,
             sendResult,
         };
     } catch (error) {
@@ -338,6 +361,10 @@ const resetReminder = async (signupId) => {
         const updatedSignup = await signupRepository.updateSignup(signupId, {
             status: "PENDING",
             reminderSentAt: null,
+            firstReminderStatus: "PENDING",
+            firstReminderSentAt: null,
+            secondReminderStatus: "PENDING",
+            secondReminderSentAt: null,
         });
 
         logger.info("Reminder reset to PENDING", { signupId });

@@ -202,9 +202,15 @@ const MyRegistrations = () => {
                 <p className="text-sm font-medium text-foreground">
                   {CLASS_TYPE_LABELS[signup.classType] || signup.classType}
                 </p>
-                <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                  <Calendar className="h-3 w-3" />
-                  <span>Reminder: {formatDate(signup.reminderScheduledDate)}</span>
+                <div className="mt-1 flex flex-col gap-1 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-1">
+                    <Calendar className="h-3 w-3" />
+                    <span>1st Reminder: {formatDate(signup.firstReminderDate)}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Calendar className="h-3 w-3" />
+                    <span>2nd Reminder: {formatDate(signup.secondReminderDate)}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -383,9 +389,15 @@ const MyRegistrations = () => {
                       <p className="text-sm font-medium text-foreground">
                         {CLASS_TYPE_LABELS[signup.classType] || signup.classType}
                       </p>
-                      <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                        <Calendar className="h-3 w-3" />
-                        <span>Reminder: {formatDate(signup.reminderScheduledDate)}</span>
+                      <div className="mt-1 flex flex-col gap-1 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          <span>1st Reminder: {formatDate(signup.firstReminderDate)}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          <span>2nd Reminder: {formatDate(signup.secondReminderDate)}</span>
+                        </div>
                       </div>
                     </div>
                   </div>

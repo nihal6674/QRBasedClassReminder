@@ -13,6 +13,7 @@ const ReminderDetailModal = ({ isOpen, onClose, signup, onRefresh }) => {
   const [deliveryLogs, setDeliveryLogs] = useState([]);
   const [isLoadingLogs, setIsLoadingLogs] = useState(false);
   const [isRescheduling, setIsRescheduling] = useState(false);
+  const [selectedReminderLevel, setSelectedReminderLevel] = useState(1);
   const [newDate, setNewDate] = useState('');
   const [confirmReset, setConfirmReset] = useState(false);
   const [confirmDeleteSignup, setConfirmDeleteSignup] = useState(false);
@@ -30,6 +31,7 @@ const ReminderDetailModal = ({ isOpen, onClose, signup, onRefresh }) => {
       setConfirmReset(false);
       setConfirmDeleteSignup(false);
       setConfirmDeleteStudent(false);
+      setSelectedReminderLevel(1);
       setNewDate('');
     }
   }, [isOpen, signup?.id]);
@@ -64,7 +66,7 @@ const ReminderDetailModal = ({ isOpen, onClose, signup, onRefresh }) => {
       return;
     }
     try {
-      await rescheduleReminderAsync(signup.id, newDate);
+      await rescheduleReminderAsync(signup.id, selectedReminderLevel, newDate);
       toast.success('Reminder rescheduled successfully');
       setIsRescheduling(false);
       setNewDate('');
@@ -153,26 +155,34 @@ const ReminderDetailModal = ({ isOpen, onClose, signup, onRefresh }) => {
               <p className="font-medium">{getClassTypeLabel(signup.classType)}</p>
             </div>
             <div>
-              <span className="text-muted-foreground">Status:</span>
-              <div className="mt-0.5">
-                <Badge className={getStatusColor(signup.status)}>{signup.status}</Badge>
-              </div>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Scheduled Date:</span>
-              <p className="font-medium">{formatDate(signup.reminderScheduledDate, 'MMM dd, yyyy hh:mm a')}</p>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Sent At:</span>
-              <p className="font-medium">
-                {signup.reminderSentAt
-                  ? formatDate(signup.reminderSentAt, 'MMM dd, yyyy hh:mm a')
-                  : 'Not sent yet'}
-              </p>
-            </div>
-            <div>
               <span className="text-muted-foreground">Signup Date:</span>
               <p className="font-medium">{formatDate(signup.createdAt, 'MMM dd, yyyy')}</p>
+            </div>
+            <div className="col-span-2 grid grid-cols-2 gap-3 mt-2 pt-2 border-t border-border/50">
+              <div>
+                <span className="text-muted-foreground text-[10px] font-semibold uppercase">1st Reminder</span>
+                <div className="mt-1 space-y-1">
+                  <div className="flex items-center justify-between pr-2">
+                    <p className="font-medium whitespace-nowrap">{formatDate(signup.firstReminderDate, 'MMM dd, yyyy')}</p>
+                    <Badge className={getStatusColor(signup.firstReminderStatus)}>{signup.firstReminderStatus}</Badge>
+                  </div>
+                  {signup.firstReminderSentAt && <p className="text-xs text-green-600">Sent: {formatDate(signup.firstReminderSentAt, 'MMM dd, yyyy hh:mm a')}</p>}
+                </div>
+              </div>
+              <div className="border-l pl-3">
+                <span className="text-muted-foreground text-[10px] font-semibold uppercase">2nd Reminder</span>
+                <div className="mt-1 space-y-1">
+                  <div className="flex items-center justify-between pr-2">
+                    <p className="font-medium whitespace-nowrap">{formatDate(signup.secondReminderDate, 'MMM dd, yyyy')}</p>
+                    <Badge className={getStatusColor(signup.secondReminderStatus)}>{signup.secondReminderStatus}</Badge>
+                  </div>
+                  {signup.secondReminderSentAt && <p className="text-xs text-green-600">Sent: {formatDate(signup.secondReminderSentAt, 'MMM dd, yyyy hh:mm a')}</p>}
+                </div>
+              </div>
+            </div>
+            <div className="col-span-2 mt-2 pt-2 border-t border-border/50">
+              <span className="text-muted-foreground mr-2">Overall Status:</span>
+              <Badge className={getStatusColor(signup.status)}>{signup.status}</Badge>
             </div>
           </div>
         </div>
@@ -214,6 +224,10 @@ const ReminderDetailModal = ({ isOpen, onClose, signup, onRefresh }) => {
         {isRescheduling && (
           <div className="rounded-md border border-blue-200 bg-blue-50 p-4">
             <h3 className="mb-2 text-sm font-semibold">Reschedule Reminder</h3>
+            <div className="mb-4 flex items-center gap-4">
+               <label className="flex items-center gap-1.5 text-sm cursor-pointer"><input type="radio" value={1} checked={selectedReminderLevel === 1} onChange={() => setSelectedReminderLevel(1)} className="cursor-pointer" /> 1st Reminder</label>
+               <label className="flex items-center gap-1.5 text-sm cursor-pointer"><input type="radio" value={2} checked={selectedReminderLevel === 2} onChange={() => setSelectedReminderLevel(2)} className="cursor-pointer" /> 2nd Reminder</label>
+            </div>
             <div className="flex items-end gap-2">
               <div className="flex-1">
                 <Input

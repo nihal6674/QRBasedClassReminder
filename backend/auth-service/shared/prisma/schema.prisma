@@ -170,9 +170,20 @@ model Signup {
   id                    String       @id @default(uuid()) @db.Uuid
   studentId             String       @db.Uuid
   classType             ClassType
-  reminderScheduledDate DateTime
+  
+  // Legacy fields (kept temporarily for migration)
+  reminderScheduledDate DateTime?
   reminderSentAt        DateTime?
   status                SignupStatus @default(PENDING)
+
+  // New Dual Reminder fields
+  firstReminderDate     DateTime?
+  secondReminderDate    DateTime?
+  firstReminderSentAt   DateTime?
+  secondReminderSentAt  DateTime?
+  firstReminderStatus   SignupStatus @default(PENDING)
+  secondReminderStatus  SignupStatus @default(PENDING)
+
   optedOutEmail         Boolean      @default(false)
   optedOutSms           Boolean      @default(false)
   notes                 String?      @db.Text
@@ -186,9 +197,8 @@ model Signup {
   // Indexes for performance
   @@index([studentId])
   @@index([classType])
-  @@index([reminderScheduledDate])
-  @@index([status])
-  @@index([reminderScheduledDate, status])
+  @@index([firstReminderDate, firstReminderStatus])
+  @@index([secondReminderDate, secondReminderStatus])
   @@map("signups")
 }
 
