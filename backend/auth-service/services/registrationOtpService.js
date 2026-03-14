@@ -393,7 +393,7 @@ const completeRegistration = async (data) => {
         });
 
         // Send confirmation email with booking link
-        const bookingLink = process.env.BOOKING_LINK || "https://www-1576u.bookeo.com/bookeo/b_lpginc_start.html?ctlsrc2=vskZyJm5J1HEVBjiZ6I3S3gwac%2B3JN3dWUpvA1XVhvI%3D&src=03a&source=remarketing";
+        const bookingLink = process.env.BOOKING_LINK || "https://bookeo.com/lpginc";
         const classTypeName = CLASS_TYPE_LABELS[classType] || classType;
 
         if (email) {

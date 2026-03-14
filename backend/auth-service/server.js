@@ -323,45 +323,7 @@ app.use((req, res) => {
   });
 });
 
-// =============================================
-// Admin Auto-Creation Function
-// =============================================
-
-const initializeDefaultAdmin = async () => {
-  const email = process.env.ADMIN_EMAIL;
-  const password = process.env.ADMIN_PASSWORD;
-  const name = process.env.ADMIN_NAME || "System Admin";
-
-  if (!email || !password) {
-    logger.warn("ADMIN_EMAIL or ADMIN_PASSWORD not set. Skipping default admin creation.");
-    return;
-  }
-
-  try {
-    const existingAdmin = await adminRepository.findByEmail(email);
-
-    if (existingAdmin) {
-      logger.info("Default admin already exists, skipping creation", { email });
-      return;
-    }
-
-    const hashedPassword = await hashPassword(password);
-
-    await adminRepository.createAdmin({
-      email,
-      password: hashedPassword,
-      name,
-      role: "ADMIN",
-    });
-
-    logger.info("Default admin created successfully", { email, name });
-  } catch (error) {
-    logger.error("Failed to create default admin", {
-      error: error.message,
-      stack: error.stack,
-    });
-  }
-};
+// Auto-generation script removed by request
 
 // =============================================
 // Server Startup Function
@@ -376,8 +338,7 @@ const startServer = async () => {
     await initializeDatabase();
     logger.info("Database connection established successfully");
 
-    // Create default admin from environment variables
-    await initializeDefaultAdmin();
+
 
     // Start reminder cron job
     startReminderCron();
