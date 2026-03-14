@@ -104,8 +104,8 @@ const sendReminder = async (signupId, options = {}) => {
 
         // Get reminder preference (defaults to BOTH if not set)
         const preference = student.reminderPreference || 'BOTH';
-        const shouldSendEmail = (preference === 'EMAIL' || preference === 'BOTH') && student.email && !student.optedOutEmail;
-        const shouldSendSms = (preference === 'SMS' || preference === 'BOTH') && student.phone && !student.optedOutSms;
+        const shouldSendEmail = (preference === 'EMAIL' || preference === 'BOTH') && student.email && !student.optedOutEmail && !signup.optedOutEmail;
+        const shouldSendSms = (preference === 'SMS' || preference === 'BOTH') && student.phone && !student.optedOutSms && !signup.optedOutSms;
 
         const logMetadata = {
             triggeredBy,
