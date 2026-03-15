@@ -24,17 +24,31 @@ const getClientIP = (req) => {
 };
 
 /**
- * Extract access token from request (cookies)
+ * Extract access token from request (cookies, then Bearer header fallback)
  */
 const extractToken = (req) => {
-  return req.cookies?.[COOKIE_NAMES.ACCESS_TOKEN] || null;
+  // Try cookie first (works on desktop browsers)
+  const cookieToken = req.cookies?.[COOKIE_NAMES.ACCESS_TOKEN];
+  if (cookieToken) return cookieToken;
+
+  // Fallback: Authorization: Bearer <token> header (iOS Safari compatibility)
+  const authHeader = req.headers.authorization;
+  if (authHeader?.startsWith('Bearer ')) {
+    return authHeader.split(' ')[1];
+  }
+  return null;
 };
 
 /**
- * Extract refresh token from request (cookies)
+ * Extract refresh token from request (cookies, then header fallback)
  */
 const extractRefreshToken = (req) => {
-  return req.cookies?.[COOKIE_NAMES.REFRESH_TOKEN] || null;
+  // Try cookie first
+  const cookieToken = req.cookies?.[COOKIE_NAMES.REFRESH_TOKEN];
+  if (cookieToken) return cookieToken;
+
+  // Fallback: X-Refresh-Token header (iOS Safari compatibility)
+  return req.headers['x-refresh-token'] || null;
 };
 
 /**

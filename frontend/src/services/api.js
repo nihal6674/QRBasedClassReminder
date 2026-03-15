@@ -27,9 +27,21 @@ const processQueue = (error) => {
   failedQueue = [];
 };
 
-// Request interceptor
+// Request interceptor - attach Bearer token for iOS Safari compatibility
 apiClient.interceptors.request.use(
   (config) => {
+    // Attach Bearer token from localStorage (iOS Safari compatibility)
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    // Attach refresh token header for refresh requests
+    if (config.url?.includes('/api/admin/refresh')) {
+      const refreshToken = localStorage.getItem('refresh_token');
+      if (refreshToken) {
+        config.headers['X-Refresh-Token'] = refreshToken;
+      }
+    }
     return config;
   },
   (error) => {
@@ -66,16 +78,33 @@ apiClient.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        await axios.post(
+        // Build headers with refresh token for iOS Safari compatibility
+        const refreshHeaders = {};
+        const storedRefreshToken = localStorage.getItem('refresh_token');
+        if (storedRefreshToken) {
+          refreshHeaders['X-Refresh-Token'] = storedRefreshToken;
+        }
+
+        const refreshResponse = await axios.post(
           `${API_BASE_URL}/api/admin/refresh`,
           {},
-          { withCredentials: true }
+          { withCredentials: true, headers: refreshHeaders }
         );
+
+        // Store refreshed tokens in localStorage (iOS Safari fallback)
+        const newTokens = refreshResponse.data?.data?.tokens;
+        if (newTokens) {
+          localStorage.setItem('access_token', newTokens.accessToken);
+          localStorage.setItem('refresh_token', newTokens.refreshToken);
+        }
+
         processQueue(null);
         return apiClient(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError);
         // Refresh failed - clear auth state and redirect to login
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
         const { default: useAuthStore } = await import('@store/authStore');
         useAuthStore.getState().logout();
         return Promise.reject(refreshError);

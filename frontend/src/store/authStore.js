@@ -14,6 +14,14 @@ const useAuthStore = create((set, get) => ({
         try {
             const response = await authService.login(email, password);
             const admin = response.data?.admin || response.admin;
+            // Store tokens in localStorage for iOS Safari Bearer-token fallback
+            const tokens = response.data?.tokens || response.tokens;
+            if (tokens?.accessToken) {
+                localStorage.setItem('access_token', tokens.accessToken);
+            }
+            if (tokens?.refreshToken) {
+                localStorage.setItem('refresh_token', tokens.refreshToken);
+            }
             set({
                 admin,
                 isAuthenticated: true,
@@ -39,6 +47,8 @@ const useAuthStore = create((set, get) => ({
             // Ignore logout errors
             console.error('Logout error:', error);
         } finally {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
             set({
                 admin: null,
                 isAuthenticated: false,
@@ -61,6 +71,8 @@ const useAuthStore = create((set, get) => ({
             });
             return true;
         } catch (error) {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
             set({
                 admin: null,
                 isAuthenticated: false,

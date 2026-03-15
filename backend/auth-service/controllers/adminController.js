@@ -27,11 +27,18 @@ const login = async (req, res) => {
 
     const result = await adminService.loginAdmin({ email, password }, metadata);
 
-    // Set cookies
+    // Set cookies (primary auth for desktop browsers)
     setAuthCookies(res, result.tokens);
 
     logger.info("Admin login successful", { adminId: result.admin.id });
-    return createSuccessResponse(res, { admin: result.admin }, result.message, 200);
+    // Include tokens in response body for iOS Safari localStorage fallback
+    return createSuccessResponse(res, {
+      admin: result.admin,
+      tokens: {
+        accessToken: result.tokens.accessToken,
+        refreshToken: result.tokens.refreshToken,
+      },
+    }, result.message, 200);
   } catch (error) {
     logger.error("Admin login failed", { error: error.message, email: req.body?.email });
     return createErrorResponse(res, error, "login");
@@ -68,7 +75,13 @@ const refresh = async (req, res) => {
 
     setAuthCookies(res, result.tokens);
 
-    return createSuccessResponse(res, {}, result.message, 200);
+    // Include refreshed tokens in response body for iOS Safari localStorage fallback
+    return createSuccessResponse(res, {
+      tokens: {
+        accessToken: result.tokens.accessToken,
+        refreshToken: result.tokens.refreshToken,
+      },
+    }, result.message, 200);
   } catch (error) {
     logger.error("Token refresh failed", { error: error.message });
     clearAuthCookies(res);
